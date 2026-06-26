@@ -330,6 +330,9 @@ And important points are as follows:
 
 
 
+3.For successful new login please create your new account and you would be redirected.
+
+
 
 
 <img width="1920" height="962" alt="Screenshot (353)" src="https://github.com/user-attachments/assets/f04381ad-98fe-4683-a23a-3da255c7f824" />
