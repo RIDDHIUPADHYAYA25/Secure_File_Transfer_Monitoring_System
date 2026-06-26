@@ -1,0 +1,609 @@
+<!-- templates/audit_logs.html -->
+{% extends "base.html" %}
+
+{% block title %}Audit Logs{% endblock %}
+
+{% block breadcrumb %}
+<span class="breadcrumb-item">Security</span>
+<span class="breadcrumb-item active">Audit Logs</span>
+{% endblock %}
+
+{% block content %}
+<div class="audit-logs-container">
+    <!-- Page Header -->
+    <div class="page-header mb-4 d-flex flex-wrap justify-content-between align-items-start gap-3">
+        <div class="flex-grow-1">
+            <h2><i class="bi bi-file-text"></i> Audit Logs</h2>
+            <p class="text-muted">Comprehensive audit trail of all security events and file transfer activities</p>
+        </div>
+        <div class="export-buttons d-flex flex-wrap gap-2">
+            <button class="btn btn-outline-success" id="exportCsvBtn">
+                <i class="bi bi-filetype-csv"></i> Export CSV
+            </button>
+            <button class="btn btn-outline-danger" id="exportPdfBtn">
+                <i class="bi bi-filetype-pdf"></i> Export PDF
+            </button>
+        </div>
+    </div>
+
+    <!-- Search and Filter Bar -->
+    <div class="card sentinel-card mb-4">
+        <div class="card-body">
+            <div class="filter-bar">
+                <div class="search-wrapper-al">
+                    <i class="bi bi-search"></i>
+                    <input type="text" id="searchInput" class="form-control" placeholder="Search by event, user, file, or IP...">
+                </div>
+                
+                <div class="filter-group-al">
+                    <i class="bi bi-funnel"></i>
+                    <select id="severityFilter" class="form-select">
+                        <option value="all">All Severities</option>
+                        <option value="info">Info</option>
+                        <option value="warning">Warning</option>
+                        <option value="critical">Critical</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group-al">
+                    <i class="bi bi-calendar"></i>
+                    <select id="dateFilter" class="form-select">
+                        <option value="all">All Time</option>
+                        <option value="today">Today</option>
+                        <option value="yesterday">Yesterday</option>
+                        <option value="week">Last 7 Days</option>
+                        <option value="month">Last 30 Days</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group-al">
+                    <i class="bi bi-person"></i>
+                    <select id="userFilter" class="form-select">
+                        <option value="all">All Users</option>
+                    </select>
+                </div>
+                <div class="filter-group-al">
+                    <button id="resetFiltersBtn" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-counterclockwise"></i> Reset
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Summary -->
+    <div class="stats-summary mb-4">
+        <div class="stat-chip">
+            <i class="bi bi-database"></i>
+            <span>Total Events: <strong id="totalEventsCount">0</strong></span>
+        </div>
+        <div class="stat-chip">
+            <i class="bi bi-info-circle text-info"></i>
+            <span>Info: <strong id="infoCount">0</strong></span>
+        </div>
+        <div class="stat-chip">
+            <i class="bi bi-exclamation-triangle text-warning"></i>
+            <span>Warning: <strong id="warningCount">0</strong></span>
+        </div>
+        <div class="stat-chip">
+            <i class="bi bi-shield-exclamation text-danger"></i>
+            <span>Critical: <strong id="criticalCount">0</strong></span>
+        </div>
+    </div>
+
+    <!-- Audit Logs Table -->
+    <div class="card sentinel-card">
+        <div class="card-header">
+            <h5><i class="bi bi-table"></i> Audit Event Log</h5>
+            <div class="table-info-al">
+                <span id="displayRange">Showing 0 - 0</span>
+                <span>of <strong id="totalFilteredCount">0</strong> entries</span>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table audit-table">
+                    <thead>
+                        <tr>
+                            <th><i class="bi bi-clock"></i> Timestamp</th>
+                            <th><i class="bi bi-tag"></i> Event</th>
+                            <th><i class="bi bi-person"></i> User</th>
+                            <th><i class="bi bi-file-earmark"></i> File</th>
+                            <th><i class="bi bi-folder"></i> Source</th>
+                            <th><i class="bi bi-folder2-open"></i> Destination</th>
+                            <th><i class="bi bi-shield"></i> Severity</th>
+                        </tr>
+                    </thead>
+                    <tbody id="auditTableBody">
+                        <!-- Dynamic content -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            <div class="pagination-container" id="paginationContainer">
+                <div class="pagination-info">
+                    <span>Rows per page:</span>
+                    <select id="rowsPerPage" class="form-select form-select-sm">
+                        <option value="10">10</option>
+                        <option value="25" selected>25</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                </div>
+                <div class="pagination-controls">
+                    <button class="page-btn" id="firstPageBtn" disabled>
+                        <i class="bi bi-chevron-double-left"></i>
+                    </button>
+                    <button class="page-btn" id="prevPageBtn" disabled>
+                        <i class="bi bi-chevron-left"></i>
+                    </button>
+                    <span class="page-numbers" id="pageNumbers"></span>
+                    <button class="page-btn" id="nextPageBtn" disabled>
+                        <i class="bi bi-chevron-right"></i>
+                    </button>
+                    <button class="page-btn" id="lastPageBtn" disabled>
+                        <i class="bi bi-chevron-double-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay-al" id="loadingOverlay" style="display: none;">
+    <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+    <span>Exporting data...</span>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Audit Logs State
+    let auditLogs = [];
+
+    // Pagination variables
+    let currentPage = 1;
+    let rowsPerPage = 25;
+    let filteredLogs = [];
+    
+    // Filter variables
+    let searchTerm = "";
+    let severityFilter = "all";
+    let dateFilter = "all";
+    let userFilter = "all";
+    
+    // DOM Elements
+    const tbody = document.getElementById('auditTableBody');
+    const searchInput = document.getElementById('searchInput');
+    const severityFilterEl = document.getElementById('severityFilter');
+    const dateFilterEl = document.getElementById('dateFilter');
+    const userFilterEl = document.getElementById('userFilter');
+    const resetFiltersBtn = document.getElementById('resetFiltersBtn');
+    const exportCsvBtn = document.getElementById('exportCsvBtn');
+    const exportPdfBtn = document.getElementById('exportPdfBtn');
+    const totalEventsCountSpan = document.getElementById('totalEventsCount');
+    const infoCountSpan = document.getElementById('infoCount');
+    const warningCountSpan = document.getElementById('warningCount');
+    const criticalCountSpan = document.getElementById('criticalCount');
+    const totalFilteredCountSpan = document.getElementById('totalFilteredCount');
+    const displayRangeSpan = document.getElementById('displayRange');
+    const rowsPerPageSelect = document.getElementById('rowsPerPage');
+    const firstPageBtn = document.getElementById('firstPageBtn');
+    const prevPageBtn = document.getElementById('prevPageBtn');
+    const nextPageBtn = document.getElementById('nextPageBtn');
+    const lastPageBtn = document.getElementById('lastPageBtn');
+    const pageNumbersSpan = document.getElementById('pageNumbers');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+
+    function getSeverityBadge(severity) {
+        switch ((severity || 'info').toLowerCase()) {
+            case 'info':
+                return '<span class="severity-badge-al info"><i class="bi bi-info-circle-fill"></i> Info</span>';
+            case 'warning':
+                return '<span class="severity-badge-al warning"><i class="bi bi-exclamation-triangle-fill"></i> Warning</span>';
+            case 'critical':
+                return '<span class="severity-badge-al critical"><i class="bi bi-shield-exclamation"></i> Critical</span>';
+            default:
+                return '<span class="severity-badge-al info">' + escapeHtml(severity || 'Info') + '</span>';
+        }
+    }
+
+    function getEventIcon(event) {
+        const icons = {
+            'File Copy': 'bi-files',
+            'File Transfer': 'bi-arrow-left-right',
+            'USB Connection': 'bi-usb-plug',
+            'USB Disconnection': 'bi-eject',
+            'Login Success': 'bi-box-arrow-in-right',
+            'DLP Violation': 'bi-shield-slash',
+            'File Access Denied': 'bi-lock',
+            'File Upload': 'bi-cloud-upload',
+            'Integrity Check Failed': 'bi-shield-exclamation',
+            'Configuration Change': 'bi-gear',
+            'File Encryption': 'bi-lock-fill',
+            'Failed Login Attempt': 'bi-x-octagon',
+            'File Download': 'bi-cloud-download',
+            'Permission Change': 'bi-person-badge',
+            'Malware Detection': 'bi-bug',
+            'Created': 'bi-plus-circle',
+            'Modified': 'bi-pencil-square',
+            'Deleted': 'bi-trash',
+            'Moved': 'bi-arrow-right-circle'
+        };
+        return icons[event] || 'bi-record-circle';
+    }
+
+    // Populate user filter dropdown dynamically from distinct log users
+    function populateUserFilter() {
+        const users = Array.from(new Set(auditLogs.map(log => log.user))).filter(Boolean).sort();
+        userFilterEl.innerHTML = `<option value="all">All Users</option>` + 
+            users.map(u => `<option value="${escapeHtml(u)}">${escapeHtml(u)}</option>`).join('');
+        userFilterEl.value = userFilter;
+    }
+
+    function openFileDetails(logId) {
+        const log = filteredLogs.find(l => l.id === Number(logId));
+        if (!log) return;
+        window.openSharedEventDetails({
+            id: log.id,
+            timestamp: log.timestamp,
+            event_type: log.event,
+            file_name: log.file,
+            source_path: log.source,
+            destination_path: log.destination,
+            user: log.user,
+            process_name: log.processName,
+            status: log.severity || 'info',
+            severity: log.severity || 'info',
+            alert_type: log.alertType || 'N/A',
+            alert_reason: log.alertReason,
+            severity_reason: log.severityReason,
+            sha256_hash: log.sha256
+        });
+    }
+
+    // Load logs data from API
+    async function loadData() {
+        try {
+            const res = await fetch('/api/audit-logs?limit=1000');
+            const data = await res.json();
+            
+            auditLogs = data.map(log => ({
+                id: log.id,
+                timestamp: log.timestamp,
+                event: log.event_type || 'Activity',
+                user: log.user || 'system',
+                file: log.file_name || '-',
+                source: log.source_path || 'N/A',
+                destination: log.destination_path || 'N/A',
+                severity: log.severity || (log.status === 'safe' ? 'info' : log.status),
+                alertType: log.alert_type || 'N/A',
+                alertReason: log.alert_reason || '',
+                severityReason: log.severity_reason || '',
+                processName: log.process_name || 'unknown',
+                sha256: log.sha256_hash || ''
+            }));
+            
+            populateUserFilter();
+            filterLogs();
+        } catch (err) {
+            console.error("Error fetching audit logs:", err);
+        }
+    }
+
+    function filterLogs() {
+        filteredLogs = [...auditLogs];
+        
+        // Search filter
+        if (searchTerm) {
+            filteredLogs = filteredLogs.filter(log => 
+                log.event.toLowerCase().includes(searchTerm) ||
+                log.user.toLowerCase().includes(searchTerm) ||
+                log.file.toLowerCase().includes(searchTerm) ||
+                log.source.toLowerCase().includes(searchTerm) ||
+                log.destination.toLowerCase().includes(searchTerm) ||
+                log.alertReason.toLowerCase().includes(searchTerm) ||
+                log.severityReason.toLowerCase().includes(searchTerm)
+            );
+        }
+        
+        // Severity filter
+        if (severityFilter !== 'all') {
+            filteredLogs = filteredLogs.filter(log => log.severity === severityFilter);
+        }
+        
+        // Date filter
+        if (dateFilter !== 'all') {
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            
+            filteredLogs = filteredLogs.filter(log => {
+                // Replacing dash/space to support reliable parsing on different browsers
+                const logDate = new Date(log.timestamp.replace(/-/g, '/'));
+                
+                switch(dateFilter) {
+                    case 'today':
+                        return logDate >= today;
+                    case 'yesterday':
+                        const yesterday = new Date(today);
+                        yesterday.setDate(yesterday.getDate() - 1);
+                        return logDate >= yesterday && logDate < today;
+                    case 'week':
+                        const weekAgo = new Date(today);
+                        weekAgo.setDate(weekAgo.getDate() - 7);
+                        return logDate >= weekAgo;
+                    case 'month':
+                        const monthAgo = new Date(today);
+                        monthAgo.setMonth(monthAgo.getMonth() - 1);
+                        return logDate >= monthAgo;
+                    default:
+                        return true;
+                }
+            });
+        }
+        
+        // User filter
+        if (userFilter !== 'all') {
+            filteredLogs = filteredLogs.filter(log => log.user === userFilter);
+        }
+        
+        // Reset to first page when filters change
+        currentPage = 1;
+        updateStats();
+        renderTable();
+        renderPagination();
+    }
+
+    function renderTable() {
+        const start = (currentPage - 1) * rowsPerPage;
+        const end = start + rowsPerPage;
+        const pageLogs = filteredLogs.slice(start, end);
+
+        if (pageLogs.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="text-center text-muted py-5">
+                        <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+                        <p class="mt-2">No audit logs found</p>
+                        <button class="btn btn-sm btn-primary" id="clearFiltersBtn">Clear Filters</button>
+                    </td>
+                </tr>
+            `;
+            const clearFiltersBtn = document.getElementById('clearFiltersBtn');
+            if (clearFiltersBtn) {
+                clearFiltersBtn.addEventListener('click', resetFilters);
+            }
+        } else {
+            tbody.innerHTML = pageLogs.map(log => `
+                <tr class="audit-row severity-${log.severity}" data-log-id="${log.id}">
+                    <td class="timestamp-cell">${escapeHtml(log.timestamp)}</td>
+                    <td>
+                        <div class="event-cell">
+                            <i class="bi ${getEventIcon(log.event)}"></i>
+                            <span>${escapeHtml(log.event)}</span>
+                        </div>
+                    </td>
+                    <td><i class="bi bi-person-circle"></i> ${escapeHtml(log.user)}</td>
+                    <td class="file-cell" title="${escapeHtml(log.file)}">
+                        <i class="bi bi-file-earmark"></i>
+                        <span>${escapeHtml(log.file.length > 30 ? log.file.substring(0, 27) + '...' : log.file)}</span>
+                    </td>
+                    <td class="path-cell" title="${escapeHtml(log.source)}">
+                        <i class="bi bi-folder"></i>
+                        <span>${escapeHtml(truncatePath(log.source))}</span>
+                    </td>
+                    <td class="path-cell" title="${escapeHtml(log.destination)}">
+                        <i class="bi bi-folder2-open"></i>
+                        <span>${escapeHtml(truncatePath(log.destination))}</span>
+                    </td>
+                    <td>${getSeverityBadge(log.severity)}</td>
+                </tr>
+            `).join('');
+
+            document.querySelectorAll('#auditTableBody tr[data-log-id]').forEach(row => {
+                row.addEventListener('click', () => {
+                    openFileDetails(row.dataset.logId);
+                });
+            });
+        }
+    }
+
+    function renderPagination() {
+        const totalPages = Math.max(1, Math.ceil(filteredLogs.length / rowsPerPage));
+        const start = (currentPage - 1) * rowsPerPage + 1;
+        const end = Math.min(filteredLogs.length, currentPage * rowsPerPage);
+
+        pageNumbersSpan.innerHTML = '';
+        const maxVisiblePages = 5;
+        let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+        let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+        if (endPage - startPage + 1 < maxVisiblePages) {
+            startPage = Math.max(1, endPage - maxVisiblePages + 1);
+        }
+
+        if (startPage > 1) {
+            pageNumbersSpan.innerHTML += `<button class="page-number" data-page="1">1</button>`;
+            if (startPage > 2) pageNumbersSpan.innerHTML += `<span class="page-dots">...</span>`;
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            pageNumbersSpan.innerHTML += `<button class="page-number ${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
+        }
+
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) pageNumbersSpan.innerHTML += `<span class="page-dots">...</span>`;
+            pageNumbersSpan.innerHTML += `<button class="page-number" data-page="${totalPages}">${totalPages}</button>`;
+        }
+
+        firstPageBtn.disabled = currentPage <= 1;
+        prevPageBtn.disabled = currentPage <= 1;
+        nextPageBtn.disabled = currentPage >= totalPages;
+        lastPageBtn.disabled = currentPage >= totalPages;
+
+        totalFilteredCountSpan.textContent = filteredLogs.length;
+        displayRangeSpan.textContent = filteredLogs.length === 0 ? 'Showing 0 - 0' : `Showing ${start} - ${end}`;
+
+        document.querySelectorAll('.page-number').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const page = parseInt(btn.dataset.page, 10);
+                if (!isNaN(page) && page !== currentPage) {
+                    currentPage = page;
+                    renderTable();
+                    renderPagination();
+                }
+            });
+        });
+    }
+
+    function updateStats() {
+        const total = auditLogs.length;
+        const info = auditLogs.filter(l => l.severity === 'info').length;
+        const warning = auditLogs.filter(l => l.severity === 'warning').length;
+        const critical = auditLogs.filter(l => l.severity === 'critical').length;
+        
+        totalEventsCountSpan.textContent = total;
+        infoCountSpan.textContent = info;
+        warningCountSpan.textContent = warning;
+        criticalCountSpan.textContent = critical;
+    }
+
+    function truncatePath(path) {
+        if (path.length > 35) {
+            return path.substring(0, 32) + '...';
+        }
+        return path;
+    }
+
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    function resetFilters() {
+        searchInput.value = '';
+        severityFilterEl.value = 'all';
+        dateFilterEl.value = 'all';
+        userFilterEl.value = 'all';
+        
+        searchTerm = '';
+        severityFilter = 'all';
+        dateFilter = 'all';
+        userFilter = 'all';
+        
+        filterLogs();
+        
+        if (window.showToast) {
+            window.showToast('Filters reset successfully', 'info');
+        }
+    }
+
+    // Export Functions
+    function exportToCSV() {
+        loadingOverlay.style.display = 'flex';
+        const downloadUrl = `/api/reports/download?format=csv&type=Audit_Log_Export`;
+        const anchor = document.createElement('a');
+        anchor.href = downloadUrl;
+        anchor.download = `audit_logs_export_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.csv`;
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+        loadingOverlay.style.display = 'none';
+    }
+    
+    function exportToPDF() {
+        loadingOverlay.style.display = 'flex';
+        const downloadUrl = `/api/reports/download?format=pdf&type=Audit_Log_Export`;
+        const anchor = document.createElement('a');
+        anchor.href = downloadUrl;
+        anchor.download = `audit_logs_export_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.pdf`;
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+        loadingOverlay.style.display = 'none';
+    }
+
+    // Event Listeners
+    searchInput.addEventListener('input', (e) => {
+        searchTerm = e.target.value.toLowerCase();
+        filterLogs();
+    });
+    
+    severityFilterEl.addEventListener('change', (e) => {
+        severityFilter = e.target.value;
+        filterLogs();
+    });
+    
+    dateFilterEl.addEventListener('change', (e) => {
+        dateFilter = e.target.value;
+        filterLogs();
+    });
+    
+    userFilterEl.addEventListener('change', (e) => {
+        userFilter = e.target.value;
+        filterLogs();
+    });
+    
+    resetFiltersBtn.addEventListener('click', resetFilters);
+    
+    exportCsvBtn.addEventListener('click', exportToCSV);
+    exportPdfBtn.addEventListener('click', exportToPDF);
+    
+    rowsPerPageSelect.addEventListener('change', (e) => {
+        rowsPerPage = parseInt(e.target.value);
+        currentPage = 1;
+        renderTable();
+        renderPagination();
+    });
+    
+    firstPageBtn.addEventListener('click', () => {
+        currentPage = 1;
+        renderTable();
+        renderPagination();
+    });
+
+    copySourceBtn?.addEventListener('click', () => {
+        window.copyDetailValue(detailSourceEl.textContent || '');
+    });
+
+    copyDestinationBtn?.addEventListener('click', () => {
+        window.copyDetailValue(detailDestinationEl.textContent || '');
+    });
+    
+    prevPageBtn.addEventListener('click', () => {
+        if (currentPage > 1) {
+            currentPage--;
+            renderTable();
+            renderPagination();
+        }
+    });
+    
+    nextPageBtn.addEventListener('click', () => {
+        const totalPages = Math.ceil(filteredLogs.length / rowsPerPage);
+        if (currentPage < totalPages) {
+            currentPage++;
+            renderTable();
+            renderPagination();
+        }
+    });
+    
+    lastPageBtn.addEventListener('click', () => {
+        const totalPages = Math.ceil(filteredLogs.length / rowsPerPage);
+        currentPage = totalPages;
+        renderTable();
+        renderPagination();
+    });
+    
+    // Initialize
+    async function init() {
+        await loadData();
+    }
+    
+    init();
+</script>
+{% endblock %}

@@ -1,0 +1,531 @@
+<!-- templates/integrity_check.html -->
+{% extends "base.html" %}
+
+{% block title %}Integrity Check{% endblock %}
+
+{% block breadcrumb %}
+<span class="breadcrumb-item">Security</span>
+<span class="breadcrumb-item active">Integrity Check</span>
+{% endblock %}
+
+{% block content %}
+<div class="integrity-container">
+    <!-- Page Header -->
+    <div class="page-header mb-4 d-flex flex-wrap justify-content-between align-items-start gap-3">
+        <div class="flex-grow-1">
+            <h2><i class="bi bi-shield-check"></i> File Integrity Monitoring</h2>
+            <p class="text-muted">SHA256 hash verification for critical system and sensitive files</p>
+        </div>
+        <button class="btn btn-primary flex-shrink-0" id="verifyNowBtn">
+            <i class="bi bi-shield-check"></i> Verify Now
+        </button>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="integrity-stat-card">
+                <div class="stat-icon integrity-total">
+                    <i class="bi bi-database-check"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label">Total Files Verified</span>
+                    <h3 class="stat-value" id="totalFiles">0</h3>
+                    <span class="stat-trend">Last scan: <span id="lastScanTime">Never</span></span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="integrity-stat-card">
+                <div class="stat-icon integrity-passed">
+                    <i class="bi bi-check-circle-fill"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label">Integrity Passed</span>
+                    <h3 class="stat-value text-success" id="passedCount">0</h3>
+                    <span class="stat-trend text-success"><i class="bi bi-shield-check"></i> Verified</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="integrity-stat-card">
+                <div class="stat-icon integrity-failed">
+                    <i class="bi bi-x-circle-fill"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label">Integrity Failed</span>
+                    <h3 class="stat-value text-danger" id="failedCount">0</h3>
+                    <span class="stat-trend text-danger"><i class="bi bi-exclamation-triangle"></i> Needs Attention</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SHA256 Verification Panel -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-6">
+            <div class="card sentinel-card">
+                <div class="card-header">
+                    <h5><i class="bi bi-fingerprint"></i> SHA256 Verification Tool</h5>
+                </div>
+                <div class="card-body">
+                    <div class="verification-panel">
+                        <div class="mb-3">
+                            <label class="form-label">Select File to Verify</label>
+                            <div class="file-input-wrapper">
+                                <input type="file" id="fileToVerify" class="form-control" accept="*/*">
+                                <small class="text-muted mt-1">Upload or select a file to calculate and verify its SHA256 hash</small>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Original Hash (SHA256)</label>
+                            <textarea id="originalHash" class="form-control hash-input" rows="2" placeholder="Paste the original SHA256 hash here..."></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Calculated Hash</label>
+                            <div class="calculated-hash-wrapper">
+                                <textarea id="calculatedHash" class="form-control hash-input" rows="2" readonly placeholder="Click 'Calculate Hash' to generate..."></textarea>
+                                <button class="btn btn-sm btn-outline-secondary copy-hash-btn" id="copyCalculatedHash" style="position: absolute; right: 12px; top: 8px;">
+                                    <i class="bi bi-clipboard"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="button-group">
+                            <button class="btn btn-outline-primary" id="calculateHashBtn">
+                                <i class="bi bi-calculator"></i> Calculate Hash
+                            </button>
+                            <button class="btn btn-primary" id="compareHashBtn">
+                                <i class="bi bi-arrow-left-right"></i> Compare Hashes
+                            </button>
+                        </div>
+                        <div id="hashComparisonResult" class="hash-result mt-3" style="display: none;">
+                            <!-- Dynamic comparison result -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card sentinel-card">
+                <div class="card-header">
+                    <h5><i class="bi bi-info-circle"></i> Integrity Overview</h5>
+                </div>
+                <div class="card-body">
+                    <div class="integrity-summary">
+                        <div class="integrity-progress">
+                            <div class="progress-label">
+                                <span>Overall Integrity Score</span>
+                                <span id="integrityScore">0%</span>
+                            </div>
+                            <div class="progress">
+                                <div id="integrityProgressBar" class="progress-bar" role="progressbar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div class="integrity-stats-detail mt-4">
+                            <div class="detail-item">
+                                <i class="bi bi-file-earmark-check text-success"></i>
+                                <div>
+                                    <strong>Last Full Scan</strong>
+                                    <span id="lastFullScan">Not performed</span>
+                                </div>
+                            </div>
+                            <div class="detail-item">
+                                <i class="bi bi-clock-history"></i>
+                                <div>
+                                    <strong>Next Scheduled Scan</strong>
+                                    <span>In 6 hours</span>
+                                </div>
+                            </div>
+                            <div class="detail-item">
+                                <i class="bi bi-shield-lock"></i>
+                                <div>
+                                    <strong>Encryption Standard</strong>
+                                    <span>SHA256 (FIPS Compliant)</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- File Hash Table -->
+    <div class="card sentinel-card">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <h5><i class="bi bi-table"></i> File Hash Registry</h5>
+            <div class="table-controls">
+                <div class="search-wrapper-ic">
+                    <i class="bi bi-search"></i>
+                    <input type="text" id="fileSearchInput" placeholder="Search files..." class="form-control form-control-sm">
+                </div>
+                <div class="filter-group-ic">
+                    <i class="bi bi-funnel"></i>
+                    <select id="statusFilter" class="form-select form-select-sm">
+                        <option value="all">All Status</option>
+                        <option value="valid">Valid ✓</option>
+                        <option value="failed">Failed ✗</option>
+                    </select>
+                </div>
+                <button class="btn btn-sm btn-outline-primary" id="refreshTableBtn">
+                    <i class="bi bi-arrow-clockwise"></i> Refresh
+                </button>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table integrity-table">
+                    <thead>
+                        <tr>
+                            <th><i class="bi bi-file-earmark"></i> File Name</th>
+                            <th><i class="bi bi-fingerprint"></i> Original Hash (SHA256)</th>
+                            <th><i class="bi bi-fingerprint"></i> Current Hash (SHA256)</th>
+                            <th><i class="bi bi-check-circle"></i> Status</th>
+                            <th><i class="bi bi-clock"></i> Last Verified</th>
+                        </tr>
+                    </thead>
+                    <tbody id="integrityTableBody">
+                        <!-- Dynamic content -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="table-footer p-3 text-center text-muted" id="tableFooter">
+                <span id="displayCount">0</span> files monitored
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Verification Progress Modal -->
+<div class="modal fade" id="verificationModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark-modal">
+            <div class="modal-body text-center p-4">
+                <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <h5>Verifying File Integrity</h5>
+                <p class="text-muted" id="verificationStatus">Scanning files...</p>
+                <div class="progress mt-3">
+                    <div id="verificationProgress" class="progress-bar" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let integrityFiles = [];
+    
+    // DOM Elements
+    const tbody = document.getElementById('integrityTableBody');
+    const totalFilesSpan = document.getElementById('totalFiles');
+    const passedCountSpan = document.getElementById('passedCount');
+    const failedCountSpan = document.getElementById('failedCount');
+    const integrityScoreSpan = document.getElementById('integrityScore');
+    const integrityProgressBar = document.getElementById('integrityProgressBar');
+    const lastScanTimeSpan = document.getElementById('lastScanTime');
+    const lastFullScanSpan = document.getElementById('lastFullScan');
+    const searchInput = document.getElementById('fileSearchInput');
+    const statusFilter = document.getElementById('statusFilter');
+    const refreshBtn = document.getElementById('refreshTableBtn');
+    const verifyNowBtn = document.getElementById('verifyNowBtn');
+    const calculateHashBtn = document.getElementById('calculateHashBtn');
+    const compareHashBtn = document.getElementById('compareHashBtn');
+    const fileInput = document.getElementById('fileToVerify');
+    const originalHashTextarea = document.getElementById('originalHash');
+    const calculatedHashTextarea = document.getElementById('calculatedHash');
+    const copyHashBtn = document.getElementById('copyCalculatedHash');
+    const hashComparisonResult = document.getElementById('hashComparisonResult');
+    const displayCountSpan = document.getElementById('displayCount');
+    
+    // State
+    let currentFilter = "all";
+    let searchTerm = "";
+    
+    // Helper Functions
+    function truncateHash(hash) {
+        if (hash && hash.length > 20) {
+            return hash.substring(0, 16) + '...' + hash.substring(hash.length - 8);
+        }
+        return hash;
+    }
+    
+    function getStatusBadge(status) {
+        if (status === 'valid') {
+            return '<span class="integrity-badge valid"><i class="bi bi-check-circle-fill"></i> Valid</span>';
+        } else {
+            return '<span class="integrity-badge failed"><i class="bi bi-x-circle-fill"></i> Failed</span>';
+        }
+    }
+    
+    function renderTable() {
+        let filteredFiles = integrityFiles;
+        
+        // Apply status filter
+        if (currentFilter !== 'all') {
+            filteredFiles = filteredFiles.filter(file => file.status === currentFilter);
+        }
+        
+        // Apply search filter
+        if (searchTerm) {
+            filteredFiles = filteredFiles.filter(file => 
+                file.fileName.toLowerCase().includes(searchTerm)
+            );
+        }
+        
+        if (filteredFiles.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="text-center text-muted py-5">
+                        <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+                        <p class="mt-2">No integrity files found</p>
+                    </td>
+                </tr>
+            `;
+        } else {
+            tbody.innerHTML = filteredFiles.map(file => `
+                <tr class="integrity-row ${file.status}">
+                    <td>
+                        <div class="file-info-ic">
+                            <i class="bi bi-file-earmark-${file.status === 'valid' ? 'check' : 'x'}"></i>
+                            <span>${escapeHtml(file.fileName)}</span>
+                        </div>
+                    </td>
+                    <td class="hash-cell" title="${file.originalHash}">
+                        <code class="hash-code">${truncateHash(file.originalHash)}</code>
+                    </td>
+                    <td class="hash-cell" title="${file.currentHash}">
+                        <code class="hash-code ${file.status === 'failed' ? 'hash-mismatch' : ''}">${truncateHash(file.currentHash)}</code>
+                    </td>
+                    <td>${getStatusBadge(file.status)}</td>
+                    <td class="timestamp-cell">${file.lastVerified}</td>
+                </tr>
+            `).join('');
+        }
+        
+        displayCountSpan.textContent = filteredFiles.length;
+        updateStats();
+    }
+    
+    function updateStats() {
+        const total = integrityFiles.length;
+        const passed = integrityFiles.filter(f => f.status === 'valid').length;
+        const failed = integrityFiles.filter(f => f.status === 'failed').length;
+        const score = total > 0 ? ((passed / total) * 100).toFixed(1) : 0;
+        
+        totalFilesSpan.textContent = total;
+        passedCountSpan.textContent = passed;
+        failedCountSpan.textContent = failed;
+        integrityScoreSpan.textContent = `${score}%`;
+        integrityProgressBar.style.width = `${score}%`;
+        
+        // Set progress bar color based on score
+        if (score >= 90) {
+            integrityProgressBar.className = 'progress-bar bg-success';
+        } else if (score >= 70) {
+            integrityProgressBar.className = 'progress-bar bg-warning';
+        } else {
+            integrityProgressBar.className = 'progress-bar bg-danger';
+        }
+    }
+    
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+    
+    // File hash calculation (Web Crypto API)
+    calculateHashBtn.addEventListener('click', async () => {
+        const file = fileInput.files[0];
+        if (!file) {
+            if (window.showToast) {
+                window.showToast('Please select a file first', 'warning');
+            }
+            return;
+        }
+        
+        calculatedHashTextarea.value = "Calculating...";
+        try {
+            const arrayBuffer = await file.arrayBuffer();
+            const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            
+            calculatedHashTextarea.value = hashHex;
+            if (window.showToast) {
+                window.showToast(`Hash calculated for ${file.name}`, 'success');
+            }
+        } catch (err) {
+            console.error("Error calculating hash:", err);
+            calculatedHashTextarea.value = "Error: " + err.message;
+            if (window.showToast) {
+                window.showToast('Failed to calculate hash', 'error');
+            }
+        }
+    });
+    
+    // Compare hashes
+    compareHashBtn.addEventListener('click', () => {
+        const originalHash = originalHashTextarea.value.trim().toLowerCase();
+        const calculatedHash = calculatedHashTextarea.value.trim().toLowerCase();
+        
+        if (!originalHash || !calculatedHash) {
+            if (window.showToast) {
+                window.showToast('Please provide both original and calculated hashes', 'warning');
+            }
+            return;
+        }
+        
+        const isMatch = originalHash === calculatedHash;
+        
+        hashComparisonResult.style.display = 'block';
+        if (isMatch) {
+            hashComparisonResult.innerHTML = `
+                <div class="alert alert-success mb-0">
+                    <i class="bi bi-check-circle-fill"></i>
+                    <strong>Verification Passed!</strong> The file hash matches the original hash. File integrity is intact.
+                </div>
+            `;
+        } else {
+            hashComparisonResult.innerHTML = `
+                <div class="alert alert-danger mb-0">
+                    <i class="bi bi-x-circle-fill"></i>
+                    <strong>Verification Failed!</strong> The file hash does NOT match the original hash. File may be corrupted or tampered.
+                </div>
+            `;
+        }
+    });
+    
+    // Copy hash to clipboard
+    copyHashBtn.addEventListener('click', async () => {
+        const hash = calculatedHashTextarea.value;
+        if (hash && hash !== 'Calculating...' && !hash.startsWith('Error:')) {
+            try {
+                await navigator.clipboard.writeText(hash);
+                if (window.showToast) {
+                    window.showToast('Hash copied to clipboard', 'success');
+                }
+            } catch (err) {
+                if (window.showToast) {
+                    window.showToast('Failed to copy hash', 'error');
+                }
+            }
+        }
+    });
+    
+    // Perform full integrity verification via backend scan
+    async function performIntegrityVerification() {
+        const modal = new bootstrap.Modal(document.getElementById('verificationModal'));
+        const progressBar = document.getElementById('verificationProgress');
+        const statusText = document.getElementById('verificationStatus');
+        
+        modal.show();
+        progressBar.style.width = `20%`;
+        statusText.textContent = `Triggering backend scan...`;
+        
+        try {
+            progressBar.style.width = `50%`;
+            statusText.textContent = `Running verification scan on server...`;
+            
+            const res = await fetch('/api/verify-integrity', {
+                method: 'POST'
+            });
+            const data = await res.json();
+            
+            progressBar.style.width = `80%`;
+            statusText.textContent = `Processing verification results...`;
+            
+            if (data.success) {
+                integrityFiles = data.files.map(f => ({
+                    id: f.id,
+                    fileName: f.fileName,
+                    originalHash: f.originalHash,
+                    currentHash: f.currentHash,
+                    status: f.status,
+                    lastVerified: f.lastVerified
+                }));
+                
+                progressBar.style.width = `100%`;
+                statusText.textContent = `Verification completed!`;
+                
+                const now = new Date().toLocaleString();
+                lastScanTimeSpan.textContent = now;
+                lastFullScanSpan.textContent = now;
+                
+                renderTable();
+                
+                setTimeout(() => {
+                    modal.hide();
+                    if (window.showToast) {
+                        window.showToast('Integrity verification scan completed', 'success');
+                    }
+                }, 500);
+            } else {
+                throw new Error(data.message || "Failed to verify integrity");
+            }
+        } catch (err) {
+            console.error("Error during integrity scan:", err);
+            progressBar.style.width = `100%`;
+            statusText.textContent = `Error: ${err.message}`;
+            setTimeout(() => {
+                modal.hide();
+                alert("Integrity Verification Scan Failed: " + err.message);
+            }, 1000);
+        }
+    }
+    
+    verifyNowBtn.addEventListener('click', performIntegrityVerification);
+    
+    // Load registry files from API
+    async function loadData() {
+        try {
+            const res = await fetch('/api/integrity-files');
+            const data = await res.json();
+            integrityFiles = data;
+            
+            // Set last verified scan times from files if any, or default
+            if (data.length > 0) {
+                const times = data.map(f => f.lastVerified).filter(Boolean);
+                if (times.length > 0) {
+                    const latestTime = times.sort().reverse()[0];
+                    lastScanTimeSpan.textContent = latestTime;
+                    lastFullScanSpan.textContent = latestTime;
+                }
+            }
+            renderTable();
+        } catch (err) {
+            console.error("Error loading integrity data:", err);
+        }
+    }
+
+    // Refresh table
+    refreshBtn.addEventListener('click', async () => {
+        await loadData();
+        if (window.showToast) {
+            window.showToast('File registry refreshed', 'info');
+        }
+    });
+    
+    // Search and filter
+    searchInput.addEventListener('input', (e) => {
+        searchTerm = e.target.value.toLowerCase();
+        renderTable();
+    });
+    
+    statusFilter.addEventListener('change', (e) => {
+        currentFilter = e.target.value;
+        renderTable();
+    });
+    
+    // Initial render
+    async function init() {
+        await loadData();
+    }
+    
+    init();
+</script>
+{% endblock %}

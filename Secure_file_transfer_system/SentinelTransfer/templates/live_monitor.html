@@ -1,0 +1,420 @@
+<!-- templates/live_monitor.html -->
+{% extends "base.html" %}
+
+{% block title %}Live Monitor{% endblock %}
+
+{% block breadcrumb %}
+<span class="breadcrumb-item">Monitoring</span>
+<span class="breadcrumb-item active">Live Monitor</span>
+{% endblock %}
+
+{% block content %}
+<div class="live-monitor-container">
+    <!-- Page Header -->
+    <div class="page-header mb-4 d-flex flex-wrap justify-content-between align-items-start gap-3">
+        <div class="flex-grow-1">
+            <h2><i class="bi bi-activity"></i> Live File Transfer Monitor</h2>
+            <p class="text-muted">Real-time monitoring of all file transfer activities across the enterprise</p>
+        </div>
+        <div class="live-status-badge d-inline-flex flex-wrap align-items-center gap-2">
+            <span class="live-dot"></span>
+            <span>LIVE MONITORING</span>
+            <span class="event-counter" id="eventCounter">0</span>
+        </div>
+    </div>
+
+    <!-- Control Bar -->
+    <div class="control-bar mb-4 d-flex flex-wrap align-items-center gap-3">
+        <div class="control-group flex-grow-1">
+            <div class="search-wrapper">
+                <i class="bi bi-search"></i>
+                <input type="text" id="searchInput" placeholder="Search by file name, user, or path..." class="form-control">
+            </div>
+        </div>
+        
+        <div class="control-group">
+            <div class="filter-group">
+                <i class="bi bi-funnel"></i>
+                <select id="eventTypeFilter" class="form-select">
+                    <option value="all">All Event Types</option>
+                    <option value="Created">📁 File Created</option>
+                    <option value="Modified">✏️ File Modified</option>
+                    <option value="Deleted">🗑️ File Deleted</option>
+                    <option value="Moved">➡️ File Moved</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="control-group">
+            <div class="status-filter-group">
+                <i class="bi bi-circle"></i>
+                <select id="statusFilter" class="form-select">
+                    <option value="all">All Status</option>
+                    <option value="safe">🟢 Safe</option>
+                    <option value="warning">🟡 Warning</option>
+                    <option value="critical">🔴 Critical</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="control-group d-flex flex-wrap gap-2">
+            <button id="refreshBtn" class="btn btn-primary refresh-btn">
+                <i class="bi bi-arrow-clockwise"></i>
+                <span>Refresh</span>
+            </button>
+            <button id="autoScrollBtn" class="btn btn-outline-secondary" title="Auto-scroll with new events">
+                <i class="bi bi-arrow-down-circle"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Real-time Stats Bar -->
+    <div class="stats-bar mb-4">
+        <div class="stat-item">
+            <i class="bi bi-file-earmark-text"></i>
+            <div>
+                <span class="stat-label">Total Events</span>
+                <span class="stat-value" id="totalEvents">0</span>
+            </div>
+        </div>
+        <div class="stat-item">
+            <i class="bi bi-check-circle-fill text-success"></i>
+            <div>
+                <span class="stat-label">Safe</span>
+                <span class="stat-value text-success" id="safeCount">0</span>
+            </div>
+        </div>
+        <div class="stat-item">
+            <i class="bi bi-exclamation-triangle-fill text-warning"></i>
+            <div>
+                <span class="stat-label">Warning</span>
+                <span class="stat-value text-warning" id="warningCount">0</span>
+            </div>
+        </div>
+        <div class="stat-item">
+            <i class="bi bi-shield-exclamation text-danger"></i>
+            <div>
+                <span class="stat-label">Critical</span>
+                <span class="stat-value text-danger" id="criticalCount">0</span>
+            </div>
+        </div>
+        <div class="stat-item">
+            <i class="bi bi-clock-history"></i>
+            <div>
+                <span class="stat-label">Last Update</span>
+                <span class="stat-value" id="lastUpdate">--:--:--</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Events Table -->
+    <div class="table-container">
+        <div class="table-header">
+            <div class="table-title">
+                <i class="bi bi-table"></i>
+                <span>File Transfer Events</span>
+            </div>
+            <div class="table-info">
+                <span id="displayCount">0</span> of <span id="totalCount">0</span> events
+            </div>
+        </div>
+        
+        <div class="table-responsive">
+            <table class="events-table" id="eventsTable">
+                <thead>
+                    <tr>
+                        <th><i class="bi bi-clock"></i> Timestamp</th>
+                        <th><i class="bi bi-file-earmark"></i> File Name</th>
+                        <th><i class="bi bi-tag"></i> Event Type</th>
+                        <th><i class="bi bi-folder"></i> Source Path</th>
+                        <th><i class="bi bi-folder2-open"></i> Destination Path</th>
+                        <th><i class="bi bi-person"></i> User</th>
+                        <th><i class="bi bi-cpu"></i> Process Name</th>
+                        <th><i class="bi bi-check-circle"></i> Status</th>
+                    </tr>
+                </thead>
+                <tbody id="eventsTableBody">
+                    <!-- Dynamic content will be inserted here -->
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Loading Overlay -->
+        <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <span>Fetching live events...</span>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let events = [];
+    let autoScroll = true;
+    let pollInterval;
+    let eventCounter = 0;
+    let lastFetchedId = 0;
+    
+    // Fetch live audit logs from the database
+    async function fetchLiveLogs(isInitial = false) {
+        try {
+            const res = await fetch('/api/audit-logs?limit=100');
+            const data = await res.json();
+            
+            // Map backend database keys (snake_case) to frontend (camelCase)
+            const newEvents = data.map(log => ({
+                id: log.id,
+                timestamp: new Date(log.timestamp),
+                fileName: log.file_name,
+                eventType: log.event_type || 'File Transfer',
+                sourcePath: log.source_path,
+                destinationPath: log.destination_path || '-',
+                user: log.user || 'system',
+                processName: log.process_name || 'unknown',
+                status: log.status || 'safe',
+                severity: log.severity || log.status || 'info',
+                alertType: log.alert_type || 'N/A',
+                alertReason: log.alert_reason || 'N/A',
+                severityReason: log.severity_reason || 'N/A',
+                sha256Hash: log.sha256_hash || 'N/A'
+            }));
+
+            // Check if there are new events by comparing ids
+            if (!isInitial && newEvents.length > 0) {
+                const unseen = newEvents.filter(e => e.id > lastFetchedId);
+                if (unseen.length > 0) {
+                    eventCounter += unseen.length;
+                    updateEventCounter();
+                    
+                    // Show a toast for the newest event if there is one
+                    if (window.showToast && unseen.length === 1) {
+                        window.showToast(`New event: ${unseen[0].fileName} (${unseen[0].eventType})`, 'info');
+                    } else if (window.showToast && unseen.length > 1) {
+                        window.showToast(`${unseen.length} new file system events detected`, 'info');
+                    }
+                }
+            }
+
+            if (newEvents.length > 0) {
+                lastFetchedId = Math.max(...newEvents.map(e => e.id));
+            }
+
+            events = newEvents;
+            renderTable();
+            updateStats();
+        } catch (err) {
+            console.error("Error fetching live logs:", err);
+        }
+    }
+    
+    // Render table with filters
+    function renderTable() {
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        const eventTypeFilter = document.getElementById('eventTypeFilter').value;
+        const statusFilter = document.getElementById('statusFilter').value;
+        
+        let filteredEvents = events.filter(event => {
+            // Search filter
+            const matchesSearch = searchTerm === '' || 
+                event.fileName.toLowerCase().includes(searchTerm) ||
+                event.user.toLowerCase().includes(searchTerm) ||
+                event.sourcePath.toLowerCase().includes(searchTerm) ||
+                event.destinationPath.toLowerCase().includes(searchTerm);
+            
+            // Event type filter
+            const matchesEventType = eventTypeFilter === 'all' || event.eventType === eventTypeFilter;
+            
+            // Status filter
+            const matchesStatus = statusFilter === 'all' || event.status === statusFilter;
+            
+            return matchesSearch && matchesEventType && matchesStatus;
+        });
+        
+        const tbody = document.getElementById('eventsTableBody');
+        const totalCount = document.getElementById('totalCount');
+        const displayCount = document.getElementById('displayCount');
+        
+        totalCount.textContent = events.length;
+        displayCount.textContent = filteredEvents.length;
+        
+        if (filteredEvents.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-5"><i class="bi bi-inbox" style="font-size: 2rem;"></i><br>No events found</td></tr>';
+            return;
+        }
+        
+        tbody.innerHTML = filteredEvents.map(event => {
+            let statusClass = '';
+            let statusIcon = '';
+            let statusText = '';
+            
+            switch(event.status) {
+                case 'safe':
+                    statusClass = 'status-safe';
+                    statusIcon = 'bi-check-circle-fill';
+                    statusText = 'Safe';
+                    break;
+                case 'warning':
+                    statusClass = 'status-warning';
+                    statusIcon = 'bi-exclamation-triangle-fill';
+                    statusText = 'Warning';
+                    break;
+                case 'critical':
+                    statusClass = 'status-critical';
+                    statusIcon = 'bi-shield-exclamation';
+                    statusText = 'Critical';
+                    break;
+            }
+            
+            return `
+                <tr class="event-row ${statusClass} clickable" data-id="${event.id}">
+                    <td class="timestamp-cell">${formatTimestamp(event.timestamp)}</td>
+                    <td class="file-cell"><i class="bi bi-file-earmark-text"></i> ${escapeHtml(event.fileName)}</td>
+                    <td><span class="event-badge ${getEventBadgeClass(event.eventType)}">${event.eventType}</span></td>
+                    <td class="path-cell" title="${event.sourcePath}">${truncatePath(event.sourcePath)}</td>
+                    <td class="path-cell" title="${event.destinationPath}">${truncatePath(event.destinationPath)}</td>
+                    <td><i class="bi bi-person-circle"></i> ${event.user}</td>
+                    <td><code class="process-name">${event.processName}</code></td>
+                    <td><span class="status-badge ${statusClass}"><i class="${statusIcon}"></i> ${statusText}</span></td>
+                </tr>
+            `;
+        }).join('');
+
+            document.querySelectorAll('#eventsTableBody tr[data-id]').forEach(row => {
+                row.addEventListener('click', () => {
+                    const event = events.find(item => Number(item.id) === Number(row.dataset.id));
+                    if (!event) return;
+                    window.openSharedEventDetails({
+                        id: event.id,
+                        timestamp: event.timestamp,
+                        event_type: event.eventType,
+                        file_name: event.fileName,
+                        source_path: event.sourcePath,
+                        destination_path: event.destinationPath,
+                        user: event.user,
+                        process_name: event.processName,
+                        status: event.status,
+                        severity: event.severity,
+                        alert_type: event.alertType,
+                        alert_reason: event.alertReason,
+                        severity_reason: event.severityReason,
+                        sha256_hash: event.sha256Hash
+                    });
+                });
+            });
+    }
+    
+    // Helper functions
+    function formatTimestamp(date) {
+        return date.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }) + 
+               ' ' + date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+    
+    function truncatePath(path) {
+        if (path.length > 30) {
+            return path.substring(0, 27) + '...';
+        }
+        return path;
+    }
+    
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+    
+    function getEventBadgeClass(eventType) {
+        const badges = {
+            'Created': 'badge-transfer',
+            'Modified': 'badge-upload',
+            'Deleted': 'badge-dlp',
+            'Moved': 'badge-integrity'
+        };
+        return badges[eventType] || 'badge-default';
+    }
+    
+    function updateStats() {
+        const total = events.length;
+        const safe = events.filter(e => e.status === 'safe').length;
+        const warning = events.filter(e => e.status === 'warning').length;
+        const critical = events.filter(e => e.status === 'critical').length;
+        
+        document.getElementById('totalEvents').textContent = total;
+        document.getElementById('safeCount').textContent = safe;
+        document.getElementById('warningCount').textContent = warning;
+        document.getElementById('criticalCount').textContent = critical;
+        document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+    }
+    
+    function updateEventCounter() {
+        const counterElement = document.getElementById('eventCounter');
+        if (counterElement) {
+            counterElement.textContent = eventCounter;
+            counterElement.classList.add('pulse-counter');
+            setTimeout(() => counterElement.classList.remove('pulse-counter'), 500);
+        }
+    }
+    
+    // Refresh all data manually
+    async function refreshData() {
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        loadingOverlay.style.display = 'flex';
+        
+        await fetchLiveLogs(false);
+        
+        setTimeout(() => {
+            loadingOverlay.style.display = 'none';
+        }, 300);
+    }
+    
+    // Set up event listeners
+    function setupEventListeners() {
+        document.getElementById('searchInput').addEventListener('input', () => renderTable());
+        document.getElementById('eventTypeFilter').addEventListener('change', () => renderTable());
+        document.getElementById('statusFilter').addEventListener('change', () => renderTable());
+        
+        document.getElementById('refreshBtn').addEventListener('click', () => {
+            refreshData();
+        });
+        
+        const autoScrollBtn = document.getElementById('autoScrollBtn');
+        autoScrollBtn.addEventListener('click', () => {
+            autoScroll = !autoScroll;
+            autoScrollBtn.classList.toggle('active');
+            if (autoScroll) {
+                autoScrollBtn.innerHTML = '<i class="bi bi-arrow-down-circle"></i>';
+                autoScrollBtn.title = 'Auto-scroll enabled';
+            } else {
+                autoScrollBtn.innerHTML = '<i class="bi bi-arrow-down-circle-fill"></i>';
+                autoScrollBtn.title = 'Auto-scroll disabled';
+            }
+        });
+    }
+    
+    // Start real-time polling
+    function startRealTimePolling() {
+        // Poll every 3 seconds
+        pollInterval = setInterval(() => {
+            fetchLiveLogs(false);
+        }, 3000);
+    }
+    
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', () => {
+        if (pollInterval) {
+            clearInterval(pollInterval);
+        }
+    });
+    
+    // Initialize
+    async function init() {
+        setupEventListeners();
+        await fetchLiveLogs(true);
+        startRealTimePolling();
+    }
+
+    init();
+</script>
+{% endblock %}

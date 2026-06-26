@@ -1,0 +1,735 @@
+<!-- templates/sensitive_files.html -->
+{% extends "base.html" %}
+
+{% block title %}Sensitive Files{% endblock %}
+
+{% block breadcrumb %}
+<span class="breadcrumb-item">Security</span>
+<span class="breadcrumb-item active">Sensitive Files</span>
+{% endblock %}
+
+{% block content %}
+<div class="sensitive-files-container">
+    <!-- Page Header -->
+    <div class="page-header mb-4 d-flex flex-wrap justify-content-between align-items-start gap-3">
+        <div class="flex-grow-1">
+            <h2><i class="bi bi-shield-exclamation"></i> Sensitive File Protection</h2>
+            <p class="text-muted">Monitor and protect critical files across your enterprise infrastructure</p>
+        </div>
+        <button class="btn btn-primary flex-shrink-0" data-bs-toggle="modal" data-bs-target="#addFileModal">
+            <i class="bi bi-plus-lg"></i> Add Sensitive File
+        </button>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="stat-card-sf">
+                <div class="stat-icon-wrapper">
+                    <i class="bi bi-file-earmark-lock"></i>
+                </div>
+                <div class="stat-info-sf">
+                    <span class="stat-label">Total Sensitive Files</span>
+                    <h3 class="stat-value" id="totalFiles">0</h3>
+                    <span class="stat-trend"><i class="bi bi-arrow-up"></i> +12 this week</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card-sf">
+                <div class="stat-icon-wrapper">
+                    <i class="bi bi-folder-check"></i>
+                </div>
+                <div class="stat-info-sf">
+                    <span class="stat-label">Monitored Directories</span>
+                    <h3 class="stat-value" id="totalDirectories">0</h3>
+                    <span class="stat-trend"><i class="bi bi-check-circle"></i> All active</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card-sf">
+                <div class="stat-icon-wrapper">
+                    <i class="bi bi-exclamation-triangle"></i>
+                </div>
+                <div class="stat-info-sf">
+                    <span class="stat-label">Recent Violations</span>
+                    <h3 class="stat-value" id="recentViolations">0</h3>
+                    <span class="stat-trend trend-warning"><i class="bi bi-graph-up"></i> +3 vs last week</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Protected Directories Section -->
+    <div class="card sentinel-card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5><i class="bi bi-folder-shield"></i> Protected Directories</h5>
+            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addDirectoryModal">
+                <i class="bi bi-plus"></i> Add Directory
+            </button>
+        </div>
+        <div class="card-body">
+            <div class="directories-grid" id="directoriesGrid">
+                <!-- Dynamic directory list will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Sensitive Files Table -->
+    <div class="card sentinel-card">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <h5><i class="bi bi-table"></i> Sensitive Files Inventory</h5>
+                <div class="table-controls">
+                    <div class="search-wrapper-sf">
+                        <i class="bi bi-search"></i>
+                        <input type="text" id="fileSearchInput" placeholder="Search files..." class="form-control form-control-sm">
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-sm btn-outline-danger" id="removeSelectedBtn" disabled>
+                            <i class="bi bi-trash"></i> Remove Selected
+                        </button>
+                        <button class="btn btn-sm btn-outline-primary" id="refreshFilesBtn">
+                            <i class="bi bi-arrow-clockwise"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table sensitive-files-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px">
+                                <input type="checkbox" id="selectAllCheckbox">
+                            </th>
+                            <th><i class="bi bi-file-earmark"></i> File Name</th>
+                            <th><i class="bi bi-folder"></i> Location</th>
+                            <th><i class="bi bi-shield-check"></i> Protection Status</th>
+                            <th><i class="bi bi-clock-history"></i> Last Access Time</th>
+                            <th style="width: 80px"><i class="bi bi-three-dots"></i></th>
+                        </tr>
+                    </thead>
+                    <tbody id="sensitiveFilesTableBody">
+                        <!-- Dynamic content -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="table-footer" id="tableFooter" style="display: none;">
+                <div class="d-flex justify-content-between align-items-center p-3">
+                    <span class="text-muted small" id="selectedCountInfo">0 files selected</span>
+                    <div class="pagination-controls">
+                        <button class="btn btn-sm btn-outline-secondary" id="prevPageBtn" disabled>Previous</button>
+                        <span class="mx-2" id="pageInfo">Page 1 of 1</span>
+                        <button class="btn btn-sm btn-outline-secondary" id="nextPageBtn" disabled>Next</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Sensitive File Modal -->
+<div class="modal fade" id="addFileModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark-modal">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-plus-circle"></i> Add Sensitive File</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addFileForm">
+                    <div class="mb-3">
+                        <label class="form-label">File Name</label>
+                        <input type="text" class="form-control" id="fileName" required placeholder="e.g., financial_report.xlsx">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">File Path</label>
+                        <input type="text" class="form-control" id="filePath" required placeholder="C:\Sensitive\ or /home/sensitive/">
+                        <small class="text-muted">Full directory path where the file resides</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Protection Level</label>
+                        <select class="form-select" id="protectionLevel">
+                            <option value="High">🔴 High - Real-time monitoring + DLP</option>
+                            <option value="Medium">🟡 Medium - Real-time monitoring</option>
+                            <option value="Low">🟢 Low - Periodic scanning</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Classification</label>
+                        <select class="form-select" id="classification">
+                            <option value="PII">PII - Personally Identifiable Information</option>
+                            <option value="Financial">Financial Data</option>
+                            <option value="IP">Intellectual Property</option>
+                            <option value="Confidential">Internal Confidential</option>
+                            <option value="Regulated">Regulated Data (GDPR/HIPAA)</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmAddFile">Add File</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Directory Modal -->
+<div class="modal fade" id="addDirectoryModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark-modal">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-folder-plus"></i> Add Protected Directory</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addDirectoryForm">
+                    <div class="mb-3">
+                        <label class="form-label">Directory Name</label>
+                        <input type="text" class="form-control" id="dirName" required placeholder="e.g., Financial Records">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Directory Path</label>
+                        <input type="text" class="form-control" id="dirPath" required placeholder="C:\Finance\ or /data/finance/">
+                        <small class="text-muted">Full system path to monitor</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Recursive Monitoring</label>
+                        <select class="form-select" id="recursive">
+                            <option value="Yes">Yes - Monitor all subdirectories</option>
+                            <option value="No">No - Monitor only this directory</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">File Extensions to Monitor (optional)</label>
+                        <input type="text" class="form-control" id="fileExtensions" placeholder=".pdf,.xlsx,.docx,.sql">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmAddDirectory">Add Directory</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Remove Confirmation Modal -->
+<div class="modal fade" id="removeConfirmModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark-modal">
+            <div class="modal-header">
+                <h5 class="modal-title text-danger"><i class="bi bi-exclamation-triangle-fill"></i> Confirm Removal</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to remove <strong id="removeCount">0</strong> sensitive file(s)?</p>
+                <p class="text-muted small">This will remove these files from monitoring protection.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmRemove">Remove</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let sensitiveFiles = [];
+    let protectedDirectories = [];
+    let recentViolationsCount = 0;
+    
+    // Pagination variables
+    let currentPage = 1;
+    const itemsPerPage = 10;
+    let currentFilter = "";
+    
+    // DOM Elements
+    const tbody = document.getElementById('sensitiveFilesTableBody');
+    const totalFilesSpan = document.getElementById('totalFiles');
+    const totalDirectoriesSpan = document.getElementById('totalDirectories');
+    const recentViolationsSpan = document.getElementById('recentViolations');
+    const directoriesGrid = document.getElementById('directoriesGrid');
+    const searchInput = document.getElementById('fileSearchInput');
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    const removeSelectedBtn = document.getElementById('removeSelectedBtn');
+    const selectedCountInfo = document.getElementById('selectedCountInfo');
+    const prevPageBtn = document.getElementById('prevPageBtn');
+    const nextPageBtn = document.getElementById('nextPageBtn');
+    const pageInfo = document.getElementById('pageInfo');
+    
+    // Helper Functions
+    function getProtectionBadge(status) {
+        const badges = {
+            'Critical': '<span class="badge-protection critical"><i class="bi bi-shield-fill-exclamation"></i> Critical</span>',
+            'High': '<span class="badge-protection high"><i class="bi bi-shield-fill-check"></i> High</span>',
+            'Medium': '<span class="badge-protection medium"><i class="bi bi-shield-check"></i> Medium</span>',
+            'Low': '<span class="badge-protection low"><i class="bi bi-shield"></i> Low</span>'
+        };
+        return badges[status] || badges['Medium'];
+    }
+    
+    function renderFilesTable() {
+        let filteredFiles = sensitiveFiles;
+        
+        if (currentFilter) {
+            filteredFiles = sensitiveFiles.filter(file => 
+                file.name.toLowerCase().includes(currentFilter) ||
+                file.location.toLowerCase().includes(currentFilter) ||
+                file.classification.toLowerCase().includes(currentFilter)
+            );
+        }
+        
+        const totalPages = Math.ceil(filteredFiles.length / itemsPerPage);
+        const start = (currentPage - 1) * itemsPerPage;
+        const end = start + itemsPerPage;
+        const paginatedFiles = filteredFiles.slice(start, end);
+        
+        if (paginatedFiles.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-5">
+                        <i class="bi bi-folder-x" style="font-size: 3rem;"></i>
+                        <p class="mt-2">No sensitive files found</p>
+                        <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addFileModal">
+                            <i class="bi bi-plus-lg"></i> Add your first file
+                        </button>
+                    </td>
+                </tr>
+            `;
+            selectAllCheckbox.disabled = true;
+            selectAllCheckbox.checked = false;
+        } else {
+            selectAllCheckbox.disabled = false;
+            tbody.innerHTML = paginatedFiles.map(file => `
+                <tr class="file-row" data-id="${file.id}">
+                    <td>
+                        <input type="checkbox" class="file-checkbox" data-id="${file.id}" ${file.selected ? 'checked' : ''}>
+                    </td>
+                    <td>
+                        <div class="file-info">
+                            <i class="bi bi-file-earmark-lock-fill"></i>
+                            <span>${escapeHtml(file.name)}</span>
+                            <span class="file-classification">${file.classification}</span>
+                        </div>
+                    </td>
+                    <td class="file-location" title="${file.location}">${truncatePath(file.location)}</td>
+                    <td>${getProtectionBadge(file.protectionStatus)}</td>
+                    <td class="last-access">${file.lastAccess}</td>
+                    <td>
+                        <button class="btn btn-sm btn-icon remove-file-btn" data-id="${file.id}" title="Remove file">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        updatePaginationControls(totalPages, filteredFiles.length);
+        updateSelectedCount();
+        updateStats();
+    }
+    
+    function renderDirectories() {
+        if (protectedDirectories.length === 0) {
+            directoriesGrid.innerHTML = `
+                <div class="col-12 text-center text-muted py-4">
+                    <i class="bi bi-folder-x" style="font-size: 2rem;"></i>
+                    <p class="mt-2">No protected directories registered yet.</p>
+                </div>
+            `;
+            return;
+        }
+        directoriesGrid.innerHTML = protectedDirectories.map(dir => `
+            <div class="directory-card">
+                <div class="directory-icon">
+                    <i class="bi bi-folder-shield"></i>
+                </div>
+                <div class="directory-info">
+                    <div class="directory-name">${escapeHtml(dir.name)}</div>
+                    <div class="directory-path">${escapeHtml(dir.path)}</div>
+                    <div class="directory-meta">
+                        <span><i class="bi bi-files"></i> ${dir.filesMonitored} files</span>
+                        <span><i class="bi bi-diagram-3"></i> Recursive: ${dir.recursive}</span>
+                    </div>
+                </div>
+                <button class="btn btn-sm btn-outline-danger remove-dir-btn" data-id="${dir.id}">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+        `).join('');
+        
+        // Add remove directory event listeners
+        document.querySelectorAll('.remove-dir-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = parseInt(btn.dataset.id);
+                removeDirectory(id);
+            });
+        });
+    }
+    
+    function updateStats() {
+        totalFilesSpan.textContent = sensitiveFiles.length;
+        totalDirectoriesSpan.textContent = protectedDirectories.length;
+        recentViolationsSpan.textContent = recentViolationsCount;
+    }
+    
+    function updateSelectedCount() {
+        const selectedCount = sensitiveFiles.filter(f => f.selected).length;
+        if (selectedCountInfo) {
+            selectedCountInfo.textContent = `${selectedCount} file${selectedCount !== 1 ? 's' : ''} selected`;
+        }
+        if (removeSelectedBtn) {
+            removeSelectedBtn.disabled = selectedCount === 0;
+        }
+        if (selectAllCheckbox) {
+            const visibleFiles = sensitiveFiles.filter(f => 
+                !currentFilter || f.name.toLowerCase().includes(currentFilter)
+            ).length;
+            const selectedVisible = sensitiveFiles.filter(f => 
+                f.selected && (!currentFilter || f.name.toLowerCase().includes(currentFilter))
+            ).length;
+            selectAllCheckbox.checked = visibleFiles > 0 && selectedVisible === visibleFiles;
+            selectAllCheckbox.indeterminate = selectedVisible > 0 && selectedVisible < visibleFiles;
+        }
+    }
+    
+    function updatePaginationControls(totalPages, totalItems) {
+        if (prevPageBtn && nextPageBtn && pageInfo) {
+            prevPageBtn.disabled = currentPage === 1;
+            nextPageBtn.disabled = currentPage === totalPages || totalPages === 0;
+            pageInfo.textContent = totalPages === 0 ? 'Page 0 of 0' : `Page ${currentPage} of ${totalPages} (${totalItems} items)`;
+        }
+    }
+    
+    function truncatePath(path) {
+        if (path.length > 40) {
+            return path.substring(0, 37) + '...';
+        }
+        return path;
+    }
+    
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+    
+    // Load data from APIs
+    async function loadData() {
+        try {
+            // Load sensitive files
+            const filesRes = await fetch('/api/sensitive-files');
+            const filesData = await filesRes.json();
+            sensitiveFiles = filesData.map(f => ({
+                id: f.id,
+                name: f.name,
+                location: f.location,
+                protectionStatus: f.protection_status || 'Medium',
+                lastAccess: f.last_access || 'Never accessed',
+                classification: f.classification || 'Confidential',
+                selected: false
+            }));
+
+            // Load directories
+            const dirsRes = await fetch('/api/directories');
+            const dirsData = await dirsRes.json();
+            protectedDirectories = dirsData.map(d => ({
+                id: d.id,
+                name: d.name,
+                path: d.path,
+                recursive: d.recursive,
+                filesMonitored: d.filesMonitored
+            }));
+
+            // Load stats for violations
+            const statsRes = await fetch('/api/stats');
+            const stats = await statsRes.json();
+            recentViolationsCount = stats.sensitive_access || 0;
+
+            renderFilesTable();
+            renderDirectories();
+            updateStats();
+        } catch (err) {
+            console.error("Error loading protected files/folders:", err);
+        }
+    }
+
+    // CRUD Operations
+    async function addSensitiveFile(fileData) {
+        try {
+            const res = await fetch('/api/sensitive-files/add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: fileData.name,
+                    location: fileData.path,
+                    status: fileData.protectionLevel,
+                    classification: fileData.classification
+                })
+            });
+            const result = await res.json();
+            if (result.success) {
+                await loadData();
+                if (window.showToast) {
+                    window.showToast(`Added sensitive file: ${fileData.name}`, 'success');
+                }
+            } else {
+                alert(result.message || "Failed to add sensitive file");
+            }
+        } catch (err) {
+            console.error("Error adding sensitive file:", err);
+        }
+    }
+    
+    async function removeFile(fileId) {
+        try {
+            const res = await fetch(`/api/sensitive-files/remove/${fileId}`, {
+                method: 'DELETE'
+            });
+            const result = await res.json();
+            if (result.success) {
+                await loadData();
+                if (window.showToast) {
+                    window.showToast(`Removed sensitive file from protection list`, 'info');
+                }
+            } else {
+                alert(result.message || "Failed to remove sensitive file");
+            }
+        } catch (err) {
+            console.error("Error removing file:", err);
+        }
+    }
+    
+    async function removeSelectedFiles() {
+        const selectedIds = sensitiveFiles.filter(f => f.selected).map(f => f.id);
+        if (selectedIds.length === 0) return;
+        
+        try {
+            for (const fileId of selectedIds) {
+                await fetch(`/api/sensitive-files/remove/${fileId}`, {
+                    method: 'DELETE'
+                });
+            }
+            await loadData();
+            if (window.showToast) {
+                window.showToast(`Removed ${selectedIds.length} file(s) from protection`, 'info');
+            }
+        } catch (err) {
+            console.error("Error removing multiple files:", err);
+        }
+    }
+    
+    async function addDirectory(dirData) {
+        try {
+            const res = await fetch('/api/directories/add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: dirData.name,
+                    path: dirData.path,
+                    recursive: dirData.recursive
+                })
+            });
+            const result = await res.json();
+            if (result.success) {
+                await loadData();
+                if (window.showToast) {
+                    window.showToast(`Added protected directory: ${dirData.name}`, 'success');
+                }
+            } else {
+                alert(result.message || "Failed to add directory");
+            }
+        } catch (err) {
+            console.error("Error adding directory:", err);
+        }
+    }
+    
+    async function removeDirectory(dirId) {
+        try {
+            const res = await fetch(`/api/directories/remove/${dirId}`, {
+                method: 'DELETE'
+            });
+            const result = await res.json();
+            if (result.success) {
+                await loadData();
+                if (window.showToast) {
+                    window.showToast(`Removed directory from monitoring list`, 'info');
+                }
+            } else {
+                alert(result.message || "Failed to remove directory");
+            }
+        } catch (err) {
+            console.error("Error removing directory:", err);
+        }
+    }
+    
+    // Event Listeners
+    function setupEventListeners() {
+        // Search
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                currentFilter = e.target.value.toLowerCase();
+                currentPage = 1;
+                renderFilesTable();
+            });
+        }
+        
+        // Select all checkbox
+        if (selectAllCheckbox) {
+            selectAllCheckbox.addEventListener('change', (e) => {
+                const isChecked = e.target.checked;
+                sensitiveFiles.forEach(file => {
+                    if (!currentFilter || file.name.toLowerCase().includes(currentFilter)) {
+                        file.selected = isChecked;
+                    }
+                });
+                renderFilesTable();
+            });
+        }
+        
+        // Remove selected button
+        if (removeSelectedBtn) {
+            removeSelectedBtn.addEventListener('click', () => {
+                const selectedCount = sensitiveFiles.filter(f => f.selected).length;
+                if (selectedCount > 0) {
+                    document.getElementById('removeCount').textContent = selectedCount;
+                    const modal = new bootstrap.Modal(document.getElementById('removeConfirmModal'));
+                    modal.show();
+                }
+            });
+        }
+        
+        // Confirm remove
+        const confirmRemoveBtn = document.getElementById('confirmRemove');
+        if (confirmRemoveBtn) {
+            confirmRemoveBtn.addEventListener('click', () => {
+                removeSelectedFiles();
+                bootstrap.Modal.getInstance(document.getElementById('removeConfirmModal')).hide();
+            });
+        }
+        
+        // Add file modal
+        const confirmAddFile = document.getElementById('confirmAddFile');
+        if (confirmAddFile) {
+            confirmAddFile.addEventListener('click', () => {
+                const fileName = document.getElementById('fileName').value;
+                const filePath = document.getElementById('filePath').value;
+                const protectionLevel = document.getElementById('protectionLevel').value;
+                const classification = document.getElementById('classification').value;
+                
+                if (fileName && filePath) {
+                    addSensitiveFile({
+                        name: fileName,
+                        path: filePath,
+                        protectionLevel: protectionLevel,
+                        classification: classification
+                    });
+                    
+                    // Clear form and close modal
+                    document.getElementById('addFileForm').reset();
+                    bootstrap.Modal.getInstance(document.getElementById('addFileModal')).hide();
+                } else {
+                    if (window.showToast) {
+                        window.showToast('Please fill in all required fields', 'warning');
+                    }
+                }
+            });
+        }
+        
+        // Add directory modal
+        const confirmAddDirectory = document.getElementById('confirmAddDirectory');
+        if (confirmAddDirectory) {
+            confirmAddDirectory.addEventListener('click', () => {
+                const dirName = document.getElementById('dirName').value;
+                const dirPath = document.getElementById('dirPath').value;
+                const recursive = document.getElementById('recursive').value;
+                
+                if (dirName && dirPath) {
+                    addDirectory({
+                        name: dirName,
+                        path: dirPath,
+                        recursive: recursive
+                    });
+                    
+                    document.getElementById('addDirectoryForm').reset();
+                    bootstrap.Modal.getInstance(document.getElementById('addDirectoryModal')).hide();
+                } else {
+                    if (window.showToast) {
+                        window.showToast('Please fill in all required fields', 'warning');
+                    }
+                }
+            });
+        }
+        
+        // Pagination
+        if (prevPageBtn) {
+            prevPageBtn.addEventListener('click', () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    renderFilesTable();
+                }
+            });
+        }
+        
+        if (nextPageBtn) {
+            nextPageBtn.addEventListener('click', () => {
+                const filteredFiles = currentFilter ? 
+                    sensitiveFiles.filter(f => f.name.toLowerCase().includes(currentFilter)) : 
+                    sensitiveFiles;
+                const totalPages = Math.ceil(filteredFiles.length / itemsPerPage);
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    renderFilesTable();
+                }
+            });
+        }
+        
+        // Refresh button
+        const refreshBtn = document.getElementById('refreshFilesBtn');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', async () => {
+                await loadData();
+                if (window.showToast) {
+                    window.showToast('Refreshed sensitive files and directories', 'success');
+                }
+            });
+        }
+        
+        // Event delegation for remove file buttons and checkboxes
+        document.addEventListener('click', (e) => {
+            // Remove file button
+            if (e.target.closest('.remove-file-btn')) {
+                const btn = e.target.closest('.remove-file-btn');
+                const id = parseInt(btn.dataset.id);
+                removeFile(id);
+            }
+            
+            // File checkbox
+            if (e.target.classList.contains('file-checkbox')) {
+                const id = parseInt(e.target.dataset.id);
+                const file = sensitiveFiles.find(f => f.id === id);
+                if (file) {
+                    file.selected = e.target.checked;
+                    updateSelectedCount();
+                    renderFilesTable();
+                }
+            }
+        });
+    }
+    
+    // Initialize page
+    async function init() {
+        setupEventListeners();
+        await loadData();
+    }
+    
+    init();
+</script>
+{% endblock %}

@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Security Operations Center{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <section class="soc-header">
+        <div>
+            <span class="section-kicker">Security Operations</span>
+            <h2>File Transfer Monitoring</h2>
+            <p>Live audit visibility across monitored directories, sensitive file movement, integrity checks, and removable media activity.</p>
+        </div>
+        <div class="soc-status-grid">
+            <div class="soc-status-pill">
+                <i class="bi bi-check-circle-fill text-success" id="systemHealthIcon"></i>
+                <span id="systemHealthText">System Health: --</span>
+            </div>
+            <div class="soc-status-pill">
+                <i class="bi bi-activity" id="threatLevelIcon"></i>
+                <span id="threatLevelText">Threat Level: --</span>
+            </div>
+            <div class="soc-status-pill">
+                <i class="bi bi-clock-history"></i>
+                <span>Last Event: <strong id="lastScanText">--</strong></span>
+            </div>
+        </div>
+    </section>
+
+    <section class="metrics-grid">
+        <article class="metric-card">
+            <div class="metric-icon"><i class="bi bi-file-earmark-text"></i></div>
+            <div class="metric-info">
+                <h3 id="totalEventsCount">--</h3>
+                <p>Total Events</p>
+                <span class="trend neutral">Audit records</span>
+            </div>
+        </article>
+        <article class="metric-card">
+            <div class="metric-icon sensitive"><i class="bi bi-shield-exclamation"></i></div>
+            <div class="metric-info">
+                <h3 id="sensitiveTransfersCount">--</h3>
+                <p>Sensitive Events</p>
+                <span class="trend warning">DLP activity</span>
+            </div>
+        </article>
+        <article class="metric-card">
+            <div class="metric-icon integrity"><i class="bi bi-shield-slash"></i></div>
+            <div class="metric-info">
+                <h3 id="integrityViolationsCount">--</h3>
+                <p>Integrity Violations</p>
+                <span class="trend danger">Hash failures</span>
+            </div>
+        </article>
+        <article class="metric-card">
+            <div class="metric-icon usb"><i class="bi bi-usb-symbol"></i></div>
+            <div class="metric-info">
+                <h3 id="usbTransfersCount">--</h3>
+                <p>USB Transfers</p>
+                <span class="trend neutral">Removable media</span>
+            </div>
+        </article>
+    </section>
+
+    <section class="dashboard-grid two-column">
+        <article class="card sentinel-card">
+            <div class="card-header">
+                <h5><i class="bi bi-hdd-stack"></i> Monitoring Status</h5>
+                <div class="live-indicator" id="monitoringLiveStatus"><span class="pulse"></span> Active</div>
+            </div>
+            <div class="card-body">
+                <div class="monitoring-stats">
+                    <div class="monitor-item">
+                        <span>Watchdog</span>
+                        <div class="progress"><div id="watchdogProgressBar" class="progress-bar bg-success" style="width: 100%">--</div></div>
+                    </div>
+                    <div class="monitor-item">
+                        <span>Integrity Registry</span>
+                        <div class="progress"><div id="integrityFilesProgressBar" class="progress-bar bg-info" style="width: 0%">--</div></div>
+                    </div>
+                    <div class="monitor-item">
+                        <span>Active User</span>
+                        <div class="progress"><div id="activeUserProgressBar" class="progress-bar bg-warning" style="width: 100%">{{ current_user.username }}</div></div>
+                    </div>
+                    <div class="monitor-item" id="dashboardDbMonitor">
+                        <span>Database</span>
+                        <div class="progress"><div id="dbProgressBar" class="progress-bar bg-success" style="width: 0%">--</div></div>
+                    </div>
+                </div>
+            </div>
+        </article>
+
+        <article class="card sentinel-card">
+            <div class="card-header">
+                <h5><i class="bi bi-cpu"></i> Service State</h5>
+                <span class="badge bg-success" id="serviceBadge">Operational</span>
+            </div>
+            <div class="card-body service-metrics">
+                <div class="service-item">
+                    <i class="bi bi-shield-lock"></i>
+                    <div>
+                        <strong>Sentinel Core Engine</strong>
+                        <small id="coreEngineText">Last event: --</small>
+                    </div>
+                </div>
+                <div class="service-item">
+                    <i class="bi bi-usb-symbol"></i>
+                    <div>
+                        <strong>USB Transfer Detection</strong>
+                        <small id="usbPollerText">Status pending</small>
+                    </div>
+                </div>
+            </div>
+        </article>
+    </section>
+
+    <section class="dashboard-grid charts-grid" id="chartsRow">
+        <article class="card sentinel-card" id="categoryChartPanel">
+            <div class="card-header">
+                <h5><i class="bi bi-pie-chart"></i> Event Categories</h5>
+            </div>
+            <div class="card-body chart-card-body">
+                <canvas id="fileEventsPieChart"></canvas>
+                <div class="pie-legend" id="pieLegend"></div>
+            </div>
+        </article>
+        <article class="card sentinel-card" id="trendChartPanel">
+            <div class="card-header">
+                <h5><i class="bi bi-graph-up"></i> 30-Day Activity Trend</h5>
+            </div>
+            <div class="card-body chart-card-body">
+                <canvas id="transferLineChart"></canvas>
+            </div>
+        </article>
+    </section>
+
+    <section class="dashboard-grid stats-alerts-grid">
+        <article class="card sentinel-card">
+            <div class="card-header">
+                <h5><i class="bi bi-bar-chart-steps"></i> Security Counters</h5>
+            </div>
+            <div class="card-body">
+                <div class="security-stats">
+                    <div class="stat-row"><span>Registered Integrity Files</span><strong id="encryptedFilesVal">--</strong></div>
+                    <div class="progress"><div class="progress-bar bg-success" id="encryptedFilesBar" style="width: 0%"></div></div>
+                    <div class="stat-row"><span>DLP Policy Hits</span><strong id="dlpHitsVal">--</strong></div>
+                    <div class="progress"><div class="progress-bar bg-warning" id="dlpHitsBar" style="width: 0%"></div></div>
+                    <div class="stat-row"><span>Integrity Violations</span><strong id="violationsVal">--</strong></div>
+                    <div class="progress"><div class="progress-bar bg-danger" id="violationsBar" style="width: 0%"></div></div>
+                    <div class="stat-row"><span>Watcher Health</span><strong id="watcherHealthVal">--</strong></div>
+                    <div class="progress"><div class="progress-bar bg-info" id="watcherHealthBar" style="width: 0%"></div></div>
+                </div>
+            </div>
+        </article>
+
+        <article class="card sentinel-card" id="recentAlertsPanel">
+            <div class="card-header">
+                <h5><i class="bi bi-bell-fill"></i> Recent Alerts</h5>
+                <a href="{{ url_for('alerts') }}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="alert-list" id="recentAlertsList"></div>
+            </div>
+        </article>
+    </section>
+
+    <section class="dashboard-grid two-column">
+        <article class="card sentinel-card" id="timelinePanel">
+            <div class="card-header">
+                <h5><i class="bi bi-clock-history"></i> Activity Timeline</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="timeline" id="dashboardTimeline"></div>
+            </div>
+        </article>
+
+        <article class="card sentinel-card" id="auditLogsPanel">
+            <div class="card-header">
+                <h5><i class="bi bi-file-text"></i> Latest Audit Logs</h5>
+                <button class="btn btn-sm btn-outline-secondary" id="refreshLogsBtn" onclick="refreshLogs()" title="Refresh audit logs">
+                    <i class="bi bi-arrow-clockwise"></i>
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm sentinel-table mb-0">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>Event</th>
+                                <th>User / Process</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="auditLogTable"></tbody>
+                    </table>
+                </div>
+            </div>
+        </article>
+    </section>
+
+    <section class="empty-state d-none" data-empty-section>
+        <i class="bi bi-shield-check"></i>
+        <h3>No monitored events recorded</h3>
+        <p>Dashboard widgets will appear as real audit activity is captured by Watchdog and stored in the database.</p>
+    </section>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    window.SentinelDashboard = {
+        dbEncrypted: {{ (db_encrypted if db_encrypted is defined else false) | tojson }}
+    };
+</script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

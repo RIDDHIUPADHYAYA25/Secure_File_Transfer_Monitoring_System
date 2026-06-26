@@ -1,0 +1,502 @@
+<!-- templates/base.html - Unified Design System -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <meta name="description" content="SentinelTransfer - Enterprise Secure File Transfer Monitoring and DLP Framework">
+    <title>SentinelTransfer | {% block title %}Security Operations Center{% endblock %}</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Google Fonts - Professional Typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+    <!-- AOS Animation Library -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    <style>
+        /* ===== SIDEBAR COLLAPSE SYSTEM ===== */
+
+        /* Desktop default: sidebar always visible, fixed width */
+        @media (min-width: 993px) {
+            .sentinel-app {
+                display: flex;
+                min-height: 100vh;
+            }
+
+            .sentinel-sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100vh;
+                width: 260px;
+                transform: translateX(0);
+                transition: width 0.3s ease, transform 0.3s ease;
+                z-index: 200;
+                overflow: hidden;
+            }
+
+            /* Collapsed rail on desktop */
+            .sentinel-sidebar.sidebar-collapsed {
+                width: 64px;
+            }
+
+            .sentinel-sidebar.sidebar-collapsed .sidebar-user,
+            .sentinel-sidebar.sidebar-collapsed .logo-text,
+            .sentinel-sidebar.sidebar-collapsed .nav-section,
+            .sentinel-sidebar.sidebar-collapsed .nav-item span,
+            .sentinel-sidebar.sidebar-collapsed .sidebar-footer .version-info,
+            .sentinel-sidebar.sidebar-collapsed .sidebar-footer .system-status span {
+                display: none !important;
+            }
+
+            .sentinel-sidebar.sidebar-collapsed .nav-item {
+                justify-content: center;
+                padding: 0.7rem 0;
+            }
+
+            .sentinel-sidebar.sidebar-collapsed .logo-container {
+                justify-content: center;
+            }
+
+            .sentinel-sidebar.sidebar-collapsed .sidebar-close {
+                display: none;
+            }
+
+            .sentinel-main {
+                margin-left: 260px;
+                transition: margin-left 0.3s ease;
+                min-width: 0;
+                flex: 1;
+            }
+
+            .sentinel-main.main-expanded {
+                margin-left: 64px;
+            }
+
+            /* Hide overlay on desktop always */
+            .sidebar-overlay {
+                display: none !important;
+            }
+        }
+
+        /* Mobile: sidebar is hidden off-screen, slides in as overlay */
+        @media (max-width: 992px) {
+            .sentinel-sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100vh;
+                width: 280px;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+                z-index: 1050;
+            }
+
+            .sentinel-sidebar.sidebar-open {
+                transform: translateX(0);
+            }
+
+            .sentinel-main {
+                margin-left: 0 !important;
+                width: 100%;
+            }
+
+            .sidebar-overlay {
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.6);
+                z-index: 1040;
+                backdrop-filter: blur(2px);
+            }
+
+            .sidebar-overlay.active {
+                display: block;
+            }
+        }
+
+        /* Topbar always full-width */
+        .sentinel-topbar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        /* Ensure content is never cut off */
+        .sentinel-content {
+            min-height: calc(100vh - 120px);
+        }
+
+        /* User avatar initials fallback */
+        .user-avatar-initials {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #0d6efd, #0a58ca);
+            color: white;
+            font-weight: 700;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .profile-avatar-sm {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .profile-avatar-initials-sm {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #0d6efd, #0a58ca);
+            color: white;
+            font-weight: 700;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+    </style>
+
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <div class="sentinel-app">
+        <!-- ==================== SIDEBAR ==================== -->
+        <aside class="sentinel-sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-container">
+                    <i class="bi bi-shield-fill logo-icon"></i>
+                    <span class="logo-text">Sentinel<span>Transfer</span></span>
+                </div>
+                <button class="sidebar-close" id="sidebarClose">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+            
+            <!-- Dynamic user info from session -->
+            <div class="sidebar-user" data-bs-toggle="tooltip" data-bs-placement="right" title="{{ current_user.email }}">
+                {% if current_user.avatar_url %}
+                <img src="{{ current_user.avatar_url }}"
+                     alt="{{ current_user.name }}"
+                     class="user-avatar"
+                     id="sidebarAvatar"
+                     onerror="document.getElementById('sidebarAvatar').style.display='none'; document.getElementById('sidebarInitials').style.display='flex';">
+                {% endif %}
+                <div class="user-avatar-initials-sm" id="sidebarInitials" {% if current_user.avatar_url %}style="display:none;"{% endif %}>
+                    {{ current_user.name[:2].upper() if current_user.name else 'U' }}
+                </div>
+                <div class="user-info">
+                    <h6>{{ current_user.username or current_user.name }}</h6>
+                </div>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <div class="nav-section">Main</div>
+                <a href="{{ url_for('dashboard') }}" class="nav-item {% if active_page == 'dashboard' %}active{% endif %}">
+                    <i class="bi bi-speedometer2"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="{{ url_for('live_monitor') }}" class="nav-item {% if active_page == 'live_monitor' %}active{% endif %}">
+                    <i class="bi bi-activity"></i>
+                    <span>Live Monitor</span>
+                </a>
+                <a href="{{ url_for('sensitive_files') }}" class="nav-item {% if active_page == 'sensitive_files' %}active{% endif %}">
+                    <i class="bi bi-shield-exclamation"></i>
+                    <span>Sensitive Files</span>
+                </a>
+                <a href="{{ url_for('integrity_check') }}" class="nav-item {% if active_page == 'integrity_check' %}active{% endif %}">
+                    <i class="bi bi-check-circle"></i>
+                    <span>Integrity Check</span>
+                </a>
+                <a href="{{ url_for('usb_monitoring') }}" class="nav-item {% if active_page == 'usb_monitoring' %}active{% endif %}">
+                    <i class="bi bi-usb-symbol"></i>
+                    <span>USB Monitoring</span>
+                </a>
+                
+                <div class="nav-section mt-3">Operations</div>
+                <a href="{{ url_for('audit_logs') }}" class="nav-item {% if active_page == 'audit_logs' %}active{% endif %}">
+                    <i class="bi bi-file-text"></i>
+                    <span>Audit Logs</span>
+                </a>
+                <a href="{{ url_for('reports') }}" class="nav-item {% if active_page == 'reports' %}active{% endif %}">
+                    <i class="bi bi-graph-up"></i>
+                    <span>Reports</span>
+                </a>
+                <a href="{{ url_for('settings') }}" class="nav-item {% if active_page == 'settings' %}active{% endif %}">
+                    <i class="bi bi-gear"></i>
+                    <span>Settings</span>
+                </a>
+                
+                <div class="nav-divider"></div>
+                <a href="{{ url_for('logout') }}" class="nav-item logout-item">
+                    <i class="bi bi-box-arrow-right"></i>
+                    <span>Logout</span>
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="system-status">
+                    <div class="status-indicator online"></div>
+                    <span>System Online</span>
+                </div>
+                {% if db_encrypted %}
+                <div class="db-status mt-2" style="font-size: 0.72rem; color: #fbbf24; cursor: pointer; display: flex; align-items: center; gap: 0.4rem;" id="sidebarDbStatus">
+                    <i class="bi bi-database-fill-lock"></i>
+                    <span>DB: sentinel.db (Encrypted)</span>
+                </div>
+                {% else %}
+                <div class="db-status mt-2" style="font-size: 0.72rem; color: #198754; display: flex; align-items: center; gap: 0.4rem;">
+                    <i class="bi bi-database-fill-check"></i>
+                    <span>DB: sentinel.db (Decrypted)</span>
+                </div>
+                {% endif %}
+                <div class="version-info mt-2">
+                    <i class="bi bi-shield-check"></i>
+                    <span>v3.2.1 • SOC2 Ready</span>
+                </div>
+            </div>
+        </aside>
+        
+        <!-- ==================== MAIN CONTENT ==================== -->
+        <div class="sentinel-main" id="mainContent">
+            <!-- Top Navigation Bar -->
+            <header class="sentinel-topbar">
+                <div class="topbar-left">
+                    <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+                        <i class="bi bi-list"></i>
+                    </button>
+                    <div class="breadcrumb-nav">
+                        {% block breadcrumb %}
+                        <span class="breadcrumb-item active">Security Operations Center</span>
+                        {% endblock %}
+                    </div>
+                </div>
+                
+                <div class="topbar-center">
+                    <div class="search-container" id="searchContainer">
+                        <button class="search-toggle-btn d-md-none" id="searchToggleBtn" title="Search">
+                            <i class="bi bi-search"></i>
+                        </button>
+                        <i class="bi bi-search search-icon d-none d-md-block"></i>
+                        <input type="text" placeholder="Search events, files, or alerts..." id="globalSearch">
+                        <kbd class="search-kbd d-none d-lg-inline-block">⌘K</kbd>
+                        <button class="search-close-btn d-none" id="searchCloseBtn" title="Close search">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="topbar-right">
+                    <!-- Notification Center -->
+                    <div class="notification-center dropdown">
+                        <button type="button" class="topbar-icon-btn notification-btn" data-bs-toggle="dropdown" title="Notifications">
+                            <i class="bi bi-bell-fill"></i>
+                            <span class="notification-badge">3</span>
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-end notification-dropdown">
+                            <div class="dropdown-header">
+                                <span>Notifications</span>
+                                <a href="#">Mark all as read</a>
+                            </div>
+                            <div class="notification-item unread">
+                                <i class="bi bi-exclamation-triangle-fill text-warning"></i>
+                                <div class="notification-content">
+                                    <p>High-risk file transfer detected</p>
+                                    <small>2 minutes ago</small>
+                                </div>
+                            </div>
+                            <div class="dropdown-footer">
+                                <a href="#">View all notifications</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Settings quick link icon -->
+                    <a href="{{ url_for('settings') }}" class="topbar-icon-btn" title="Settings">
+                        <i class="bi bi-gear-fill"></i>
+                    </a>
+                    
+                    <!-- Dynamic user profile dropdown -->
+                    <div class="user-profile dropdown">
+                        <button type="button" class="profile-btn" data-bs-toggle="dropdown">
+                            {% if current_user.avatar_url %}
+                            <img src="{{ current_user.avatar_url }}"
+                                 alt="{{ current_user.name }}"
+                                 class="profile-avatar-sm"
+                                 id="topbarAvatar"
+                                 onerror="document.getElementById('topbarAvatar').style.display='none'; document.getElementById('topbarInitials').style.display='flex';">
+                            {% endif %}
+                            <div class="profile-avatar-initials-sm" id="topbarInitials" {% if current_user.avatar_url %}style="display:none;"{% endif %}>
+                                {{ current_user.name[:2].upper() if current_user.name else 'U' }}
+                            </div>
+                            <span class="profile-name-only">{{ current_user.username or current_user.name }}</span>
+                            <i class="bi bi-chevron-down profile-arrow"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end profile-dropdown-menu">
+                            <li>
+                                <div class="profile-dropdown-header">
+                                    <div class="profile-header-name">{{ current_user.name }}</div>
+                                    <div class="profile-header-email">{{ current_user.email }}</div>
+                                </div>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('settings') }}">
+                                    <i class="bi bi-person"></i> Profile
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('settings') }}">
+                                    <i class="bi bi-gear"></i> Settings
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item text-danger" href="{{ url_for('logout') }}">
+                                    <i class="bi bi-box-arrow-right"></i> Logout
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </header>
+            
+            <!-- Main Content Block -->
+            <main class="sentinel-content">
+                <div class="container-fluid px-3 px-md-4 py-4">
+                    {% block content %}{% endblock %}
+                </div>
+            </main>
+            
+            <!-- Footer -->
+            <footer class="sentinel-footer">
+                <div class="footer-left">
+                    <i class="bi bi-shield-fill-check"></i>
+                    <span>SentinelTransfer Enterprise Edition</span>
+                    <span class="separator">|</span>
+                    <span>Secure File Transfer Monitoring &amp; DLP Framework</span>
+                </div>
+                <div class="footer-center">
+                    <span><i class="bi bi-shield-lock"></i> SOC2 Type II Certified</span>
+                    <span><i class="bi bi-check-circle-fill text-success"></i> All Systems Operational</span>
+                </div>
+                <div class="footer-right">
+                    <span>© 2026 SentinelTransfer</span>
+                    <span class="separator">|</span>
+                    <span><i class="bi bi-clock"></i> <span id="liveClock">--:--:--</span> UTC</span>
+                </div>
+            </footer>
+        </div>
+    </div>
+    
+    <!-- Mobile overlay backdrop -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Shared Event Details Modal -->
+    <div class="modal fade" id="eventDetailsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl">
+            <div class="modal-content bg-dark-modal">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-file-earmark-text"></i> Event Details</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3 detail-section">
+                        <div class="col-md-6 detail-row">
+                            <span>Timestamp</span>
+                            <strong id="detailModalTimestamp">-</strong>
+                        </div>
+                        <div class="col-md-6 detail-row">
+                            <span>Event Type</span>
+                            <strong id="detailModalEventType">-</strong>
+                        </div>
+                        <div class="col-md-6 detail-row">
+                            <span>User</span>
+                            <strong id="detailModalUser">-</strong>
+                        </div>
+                        <div class="col-md-6 detail-row">
+                            <span>Process Name</span>
+                            <strong id="detailModalProcessName">-</strong>
+                        </div>
+                        <div class="col-md-6 detail-row">
+                            <span>File Name</span>
+                            <strong id="detailModalFileName">-</strong>
+                        </div>
+                        <div class="col-md-6 detail-row">
+                            <span>Alert Type</span>
+                            <strong id="detailModalAlertType">-</strong>
+                        </div>
+                        <div class="col-md-12 detail-row">
+                            <span>Source Path</span>
+                            <div class="detail-value">
+                                <code id="detailModalSourcePath">-</code>
+                                <button class="btn btn-sm btn-outline-secondary" id="copyDetailSourceBtn">Copy</button>
+                            </div>
+                        </div>
+                        <div class="col-md-12 detail-row">
+                            <span>Destination Path</span>
+                            <div class="detail-value">
+                                <code id="detailModalDestinationPath">-</code>
+                                <button class="btn btn-sm btn-outline-secondary" id="copyDetailDestinationBtn">Copy</button>
+                            </div>
+                        </div>
+                        <div class="col-md-6 detail-row">
+                            <span>Status</span>
+                            <strong id="detailModalStatus">-</strong>
+                        </div>
+                        <div class="col-md-6 detail-row">
+                            <span>Severity</span>
+                            <strong id="detailModalSeverity">-</strong>
+                        </div>
+                        <div class="col-md-6 detail-row">
+                            <span>Alert Reason</span>
+                            <strong id="detailModalAlertReason">-</strong>
+                        </div>
+                        <div class="col-md-6 detail-row">
+                            <span>Severity Reason</span>
+                            <strong id="detailModalSeverityReason">-</strong>
+                        </div>
+                        <div class="col-md-12 detail-row">
+                            <span>SHA-256</span>
+                            <strong id="detailModalSha256">-</strong>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-dark-modal">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="{{ url_for('static', filename='js/common.js') }}"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const sidebarDbStatus = document.getElementById('sidebarDbStatus');
+        if (sidebarDbStatus) {
+            sidebarDbStatus.addEventListener('click', function() {
+                alert("database is encrypted for maintaining user privacy");
+            });
+        }
+    });
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

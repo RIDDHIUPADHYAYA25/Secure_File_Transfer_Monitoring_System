@@ -1,0 +1,816 @@
+<!-- templates/settings.html -->
+{% extends "base.html" %}
+
+{% block title %}Settings{% endblock %}
+
+{% block breadcrumb %}
+<span class="breadcrumb-item">System</span>
+<span class="breadcrumb-item active">Settings</span>
+{% endblock %}
+
+{% block content %}
+<div class="settings-container">
+    <!-- Page Header -->
+    <div class="page-header mb-4 d-flex flex-wrap justify-content-between align-items-start gap-3">
+        <div class="flex-grow-1">
+            <h2><i class="bi bi-gear"></i> System Settings</h2>
+            <p class="text-muted">Configure application preferences and security policies</p>
+        </div>
+        <div class="action-buttons d-flex flex-wrap gap-2">
+            <button class="btn btn-outline-secondary" id="resetDefaultsBtn">
+                <i class="bi bi-arrow-counterclockwise"></i> Reset Defaults
+            </button>
+            <button class="btn btn-primary" id="saveSettingsBtn">
+                <i class="bi bi-check-lg"></i> Save Changes
+            </button>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- General Settings -->
+        <div class="col-md-6">
+            <div class="card sentinel-card settings-card">
+                <div class="card-header">
+                    <h5><i class="bi bi-sliders2"></i> General Settings</h5>
+                </div>
+                <div class="card-body">
+                    <div class="settings-form">
+                        <div class="mb-3">
+                            <label class="form-label">
+                                <i class="bi bi-building"></i> Application Name
+                            </label>
+                            <input type="text" class="form-control settings-input" id="appName" 
+                                   placeholder="Enter application name" value="SentinelTransfer">
+                            <small class="text-muted">The name displayed throughout the application</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">
+                                <i class="bi bi-folder"></i> Monitoring Path
+                            </label>
+                            <div class="input-group">
+                                <input type="text" class="form-control settings-input" id="monitoringPath" 
+                                       placeholder="C:\Monitored\" value="C:\Sentinel\Monitor\">
+                                <button class="btn btn-outline-secondary" type="button" id="browsePathBtn">
+                                    <i class="bi bi-folder2-open"></i> Browse
+                                </button>
+                            </div>
+                            <small class="text-muted">Default directory for file integrity monitoring</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">
+                                <i class="bi bi-clock"></i> Scan Interval
+                            </label>
+                            <select class="form-select settings-select" id="scanInterval">
+                                <option value="5">Every 5 minutes</option>
+                                <option value="15" selected>Every 15 minutes</option>
+                                <option value="30">Every 30 minutes</option>
+                                <option value="60">Every hour</option>
+                                <option value="360">Every 6 hours</option>
+                                <option value="720">Every 12 hours</option>
+                                <option value="1440">Daily</option>
+                            </select>
+                            <small class="text-muted">How often to perform integrity scans</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">
+                                <i class="bi bi-hdd-stack"></i> Log Retention Period
+                            </label>
+                            <select class="form-select settings-select" id="logRetention">
+                                <option value="7">7 days</option>
+                                <option value="14">14 days</option>
+                                <option value="30" selected>30 days</option>
+                                <option value="60">60 days</option>
+                                <option value="90">90 days</option>
+                                <option value="180">6 months</option>
+                                <option value="365">1 year</option>
+                            </select>
+                            <small class="text-muted">How long to retain audit logs</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Security Settings -->
+        <div class="col-md-6">
+            <div class="card sentinel-card settings-card">
+                <div class="card-header">
+                    <h5><i class="bi bi-shield-lock"></i> Security Settings</h5>
+                </div>
+                <div class="card-body">
+                    <div class="settings-form">
+                        <div class="security-option">
+                            <div class="option-info">
+                                <i class="bi bi-check-circle"></i>
+                                <div>
+                                    <strong>Enable Integrity Check</strong>
+                                    <p>Automatically verify file hashes and detect tampering</p>
+                                </div>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="enableIntegrityCheck" checked>
+                            </div>
+                        </div>
+                        
+                        <div class="security-option">
+                            <div class="option-info">
+                                <i class="bi bi-usb-symbol"></i>
+                                <div>
+                                    <strong>Enable USB Detection</strong>
+                                    <p>Monitor and log USB device connections and activity</p>
+                                </div>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="enableUsbDetection" checked>
+                            </div>
+                        </div>
+                        
+                        <div class="security-option">
+                            <div class="option-info">
+                                <i class="bi bi-bell-fill"></i>
+                                <div>
+                                    <strong>Enable Alerts</strong>
+                                    <p>Generate security alerts for suspicious activities</p>
+                                </div>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="enableAlerts" checked>
+                            </div>
+                        </div>
+                        
+                        <div class="security-option">
+                            <div class="option-info">
+                                <i class="bi bi-shield-exclamation"></i>
+                                <div>
+                                    <strong>Auto-Quarantine Suspicious Files</strong>
+                                    <p>Automatically isolate files that fail integrity checks</p>
+                                </div>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="autoQuarantine">
+                            </div>
+                        </div>
+                        
+                        <div class="security-option">
+                            <div class="option-info">
+                                <i class="bi bi-file-lock"></i>
+                                <div>
+                                    <strong>Encrypt Sensitive Logs</strong>
+                                    <p>Apply AES-256 encryption to audit log files</p>
+                                </div>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="encryptLogs" checked>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notification Settings -->
+        <div class="col-md-6">
+            <div class="card sentinel-card settings-card">
+                <div class="card-header">
+                    <h5><i class="bi bi-envelope"></i> Notification Settings</h5>
+                </div>
+                <div class="card-body">
+                    <div class="settings-form">
+                        <div class="notification-option">
+                            <div class="option-info">
+                                <i class="bi bi-envelope-fill"></i>
+                                <div>
+                                    <strong>Email Alerts</strong>
+                                    <p>Send security alerts to configured email addresses</p>
+                                </div>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="emailAlerts" checked>
+                            </div>
+                        </div>
+                        
+                        <div class="notification-option" id="emailConfigSection" style="display: none;">
+                            <div class="email-config">
+                                <label class="form-label">Recipient Email(s)</label>
+                                <input type="email" class="form-control settings-input" id="recipientEmails" 
+                                       placeholder="admin@company.com, security@company.com" 
+                                       value="soc@sentineltransfer.com, alerts@company.com">
+                                <small class="text-muted">Separate multiple emails with commas</small>
+                                
+                                <label class="form-label mt-2">SMTP Server</label>
+                                <input type="text" class="form-control settings-input" id="smtpServer" 
+                                       placeholder="smtp.company.com" value="smtp.sentineltransfer.com">
+                                
+                                <div class="row mt-2">
+                                    <div class="col-md-6">
+                                        <label class="form-label">SMTP Port</label>
+                                        <input type="number" class="form-control settings-input" id="smtpPort" 
+                                               value="587">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Encryption</label>
+                                        <select class="form-select settings-select" id="smtpEncryption">
+                                            <option value="tls" selected>TLS</option>
+                                            <option value="ssl">SSL</option>
+                                            <option value="none">None</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="notification-option">
+                            <div class="option-info">
+                                <i class="bi bi-display"></i>
+                                <div>
+                                    <strong>Desktop Alerts</strong>
+                                    <p>Show browser notifications for critical events</p>
+                                </div>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="desktopAlerts" checked>
+                            </div>
+                        </div>
+                        
+                        <div class="notification-option">
+                            <div class="option-info">
+                                <i class="bi bi-slack"></i>
+                                <div>
+                                    <strong>Slack Integration</strong>
+                                    <p>Send alerts to Slack webhook</p>
+                                </div>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="slackIntegration">
+                            </div>
+                        </div>
+                        
+                        <div class="notification-option" id="slackConfigSection" style="display: none;">
+                            <div class="slack-config">
+                                <label class="form-label">Webhook URL</label>
+                                <input type="url" class="form-control settings-input" id="slackWebhook" 
+                                       placeholder="https://hooks.slack.com/services/...">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Theme Settings -->
+        <div class="col-md-6">
+            <div class="card sentinel-card settings-card">
+                <div class="card-header">
+                    <h5><i class="bi bi-palette"></i> Theme Settings</h5>
+                </div>
+                <div class="card-body">
+                    <div class="settings-form">
+                        <div class="mb-3">
+                            <label class="form-label">
+                                <i class="bi bi-moon-stars"></i> Theme Mode
+                            </label>
+                            <div class="theme-selector">
+                                <div class="theme-option dark-mode active" data-theme="dark">
+                                    <i class="bi bi-moon-fill"></i>
+                                    <span>Dark Mode</span>
+                                </div>
+                                <div class="theme-option light-mode" data-theme="light">
+                                    <i class="bi bi-sun-fill"></i>
+                                    <span>Light Mode</span>
+                                </div>
+                                <div class="theme-option system-mode" data-theme="system">
+                                    <i class="bi bi-laptop"></i>
+                                    <span>System Default</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">
+                                <i class="bi bi-droplet"></i> Accent Color
+                            </label>
+                            <div class="accent-selector">
+                                <div class="accent-option" data-color="blue" style="background: #0d6efd;">
+                                    <i class="bi bi-check-lg"></i>
+                                </div>
+                                <div class="accent-option" data-color="cyan" style="background: #0dcaf0;">
+                                    <i class="bi bi-check-lg"></i>
+                                </div>
+                                <div class="accent-option" data-color="purple" style="background: #6f42c1;">
+                                    <i class="bi bi-check-lg"></i>
+                                </div>
+                                <div class="accent-option" data-color="green" style="background: #198754;">
+                                    <i class="bi bi-check-lg"></i>
+                                </div>
+                                <div class="accent-option" data-color="orange" style="background: #fd7e14;">
+                                    <i class="bi bi-check-lg"></i>
+                                </div>
+                                <div class="accent-option" data-color="red" style="background: #dc3545;">
+                                    <i class="bi bi-check-lg"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">
+                                <i class="bi bi-eye"></i> Dashboard Layout
+                            </label>
+                            <select class="form-select settings-select" id="dashboardLayout">
+                                <option value="default" selected>Default (Grid)</option>
+                                <option value="compact">Compact</option>
+                                <option value="detailed">Detailed</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">
+                                <i class="bi bi-fonts"></i> Font Size
+                            </label>
+                            <div class="font-size-selector">
+                                <button class="font-size-btn" data-size="small">A-</button>
+                                <button class="font-size-btn active" data-size="medium">A</button>
+                                <button class="font-size-btn" data-size="large">A+</button>
+                                <button class="font-size-btn" data-size="xlarge">A++</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Advanced Settings -->
+        <div class="col-12">
+            <div class="card sentinel-card settings-card">
+                <div class="card-header">
+                    <h5><i class="bi bi-terminal"></i> Advanced Settings</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="advanced-option">
+                                <div class="option-info">
+                                    <i class="bi bi-database-gear"></i>
+                                    <div>
+                                        <strong>Data Export Format</strong>
+                                        <p>Default format for report exports</p>
+                                    </div>
+                                </div>
+                                <select class="form-select settings-select w-auto" id="exportFormat">
+                                    <option value="pdf" selected>PDF</option>
+                                    <option value="csv">CSV</option>
+                                    <option value="json">JSON</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="advanced-option">
+                                <div class="option-info">
+                                    <i class="bi bi-clock-history"></i>
+                                    <div>
+                                        <strong>Timezone</strong>
+                                        <p>System timezone for timestamps</p>
+                                    </div>
+                                </div>
+                                <select class="form-select settings-select w-auto" id="timezone">
+                                    <option value="UTC" selected>UTC (Coordinated Universal Time)</option>
+                                    <option value="America/New_York">Eastern Time (ET)</option>
+                                    <option value="America/Chicago">Central Time (CT)</option>
+                                    <option value="America/Denver">Mountain Time (MT)</option>
+                                    <option value="America/Los_Angeles">Pacific Time (PT)</option>
+                                    <option value="Europe/London">GMT (Greenwich Mean Time)</option>
+                                    <option value="Asia/Tokyo">JST (Japan Standard Time)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mt-3">
+                            <div class="advanced-option">
+                                <div class="option-info">
+                                    <i class="bi bi-bug"></i>
+                                    <div>
+                                        <strong>Debug Mode</strong>
+                                        <p>Enable verbose logging for troubleshooting</p>
+                                    </div>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="debugMode">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mt-3">
+                            <div class="advanced-option">
+                                <div class="option-info">
+                                    <i class="bi bi-archive"></i>
+                                    <div>
+                                        <strong>Auto Backup</strong>
+                                        <p>Automatically backup configuration daily</p>
+                                    </div>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="autoBackup" checked>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Save Confirmation Modal -->
+<div class="modal fade" id="saveConfirmModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark-modal">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-check-circle"></i> Settings Saved</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center py-3">
+                    <i class="bi bi-check-circle-fill text-success" style="font-size: 4rem;"></i>
+                    <h4 class="mt-3">Settings Saved Successfully</h4>
+                    <p class="text-muted">Your configuration has been applied. Some changes may require a page refresh.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reset Confirmation Modal -->
+<div class="modal fade" id="resetConfirmModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark-modal">
+            <div class="modal-header">
+                <h5 class="modal-title text-warning"><i class="bi bi-exclamation-triangle"></i> Reset to Defaults</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to reset all settings to their default values?</p>
+                <p class="text-muted small">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning" id="confirmResetBtn">Reset Defaults</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // DOM Elements
+    const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+    const resetDefaultsBtn = document.getElementById('resetDefaultsBtn');
+    const confirmResetBtn = document.getElementById('confirmResetBtn');
+    const emailAlertsCheckbox = document.getElementById('emailAlerts');
+    const slackIntegrationCheckbox = document.getElementById('slackIntegration');
+    const emailConfigSection = document.getElementById('emailConfigSection');
+    const slackConfigSection = document.getElementById('slackConfigSection');
+    const browsePathBtn = document.getElementById('browsePathBtn');
+    
+    // Theme selector elements
+    const themeOptions = document.querySelectorAll('.theme-option');
+    const accentOptions = document.querySelectorAll('.accent-option');
+    const fontSizeBtns = document.querySelectorAll('.font-size-btn');
+    
+    // Default settings values
+    const defaultSettings = {
+        appName: 'SentinelTransfer',
+        monitoringPath: 'C:\\Sentinel\\Monitor\\',
+        scanInterval: '15',
+        logRetention: '30',
+        enableIntegrityCheck: true,
+        enableUsbDetection: true,
+        enableAlerts: true,
+        autoQuarantine: false,
+        encryptLogs: true,
+        emailAlerts: true,
+        desktopAlerts: true,
+        slackIntegration: false,
+        recipientEmails: 'soc@sentineltransfer.com, alerts@company.com',
+        smtpServer: 'smtp.sentineltransfer.com',
+        smtpPort: '587',
+        smtpEncryption: 'tls',
+        slackWebhook: '',
+        theme: 'dark',
+        accentColor: 'blue',
+        dashboardLayout: 'default',
+        fontSize: 'medium',
+        exportFormat: 'pdf',
+        timezone: 'UTC',
+        debugMode: false,
+        autoBackup: true
+    };
+    
+    // Load saved settings from backend settings API
+    async function loadSettings() {
+        try {
+            const res = await fetch('/api/settings');
+            const data = await res.json();
+            
+            const settings = {};
+            for (const key in defaultSettings) {
+                if (data.hasOwnProperty(key)) {
+                    const val = data[key];
+                    if (typeof defaultSettings[key] === 'boolean') {
+                        settings[key] = (val === 'true' || val === true || val === 1 || val === '1');
+                    } else {
+                        settings[key] = val;
+                    }
+                } else {
+                    settings[key] = defaultSettings[key];
+                }
+            }
+            
+            applySettings(settings);
+        } catch (err) {
+            console.error("Error loading settings from API:", err);
+            const savedSettings = localStorage.getItem('sentinelSettings');
+            if (savedSettings) {
+                applySettings(JSON.parse(savedSettings));
+            } else {
+                applySettings(defaultSettings);
+            }
+        }
+    }
+    
+    // Apply settings to UI
+    function applySettings(settings) {
+        // General Settings
+        document.getElementById('appName').value = settings.appName;
+        document.getElementById('monitoringPath').value = settings.monitoringPath;
+        document.getElementById('scanInterval').value = settings.scanInterval;
+        document.getElementById('logRetention').value = settings.logRetention;
+        
+        // Security Settings
+        document.getElementById('enableIntegrityCheck').checked = settings.enableIntegrityCheck;
+        document.getElementById('enableUsbDetection').checked = settings.enableUsbDetection;
+        document.getElementById('enableAlerts').checked = settings.enableAlerts;
+        document.getElementById('autoQuarantine').checked = settings.autoQuarantine;
+        document.getElementById('encryptLogs').checked = settings.encryptLogs;
+        
+        // Notification Settings
+        document.getElementById('emailAlerts').checked = settings.emailAlerts;
+        document.getElementById('desktopAlerts').checked = settings.desktopAlerts;
+        document.getElementById('slackIntegration').checked = settings.slackIntegration;
+        document.getElementById('recipientEmails').value = settings.recipientEmails;
+        document.getElementById('smtpServer').value = settings.smtpServer;
+        document.getElementById('smtpPort').value = settings.smtpPort;
+        document.getElementById('smtpEncryption').value = settings.smtpEncryption;
+        document.getElementById('slackWebhook').value = settings.slackWebhook || '';
+        
+        // Toggle conditional sections
+        emailConfigSection.style.display = settings.emailAlerts ? 'block' : 'none';
+        slackConfigSection.style.display = settings.slackIntegration ? 'block' : 'none';
+        
+        // Theme Settings
+        setActiveTheme(settings.theme);
+        setActiveAccent(settings.accentColor);
+        setActiveFontSize(settings.fontSize);
+        document.getElementById('dashboardLayout').value = settings.dashboardLayout;
+        
+        // Advanced Settings
+        document.getElementById('exportFormat').value = settings.exportFormat;
+        document.getElementById('timezone').value = settings.timezone;
+        document.getElementById('debugMode').checked = settings.debugMode;
+        document.getElementById('autoBackup').checked = settings.autoBackup;
+        
+        // Apply theme and accent dynamically
+        applyTheme(settings.theme);
+        applyAccentColor(settings.accentColor);
+        applyFontSize(settings.fontSize);
+    }
+    
+    // Get current settings from UI
+    function getCurrentSettings() {
+        return {
+            appName: document.getElementById('appName').value,
+            monitoringPath: document.getElementById('monitoringPath').value,
+            scanInterval: document.getElementById('scanInterval').value,
+            logRetention: document.getElementById('logRetention').value,
+            enableIntegrityCheck: document.getElementById('enableIntegrityCheck').checked,
+            enableUsbDetection: document.getElementById('enableUsbDetection').checked,
+            enableAlerts: document.getElementById('enableAlerts').checked,
+            autoQuarantine: document.getElementById('autoQuarantine').checked,
+            encryptLogs: document.getElementById('encryptLogs').checked,
+            emailAlerts: document.getElementById('emailAlerts').checked,
+            desktopAlerts: document.getElementById('desktopAlerts').checked,
+            slackIntegration: document.getElementById('slackIntegration').checked,
+            recipientEmails: document.getElementById('recipientEmails').value,
+            smtpServer: document.getElementById('smtpServer').value,
+            smtpPort: document.getElementById('smtpPort').value,
+            smtpEncryption: document.getElementById('smtpEncryption').value,
+            slackWebhook: document.getElementById('slackWebhook').value,
+            theme: document.querySelector('.theme-option.active')?.dataset.theme || 'dark',
+            accentColor: document.querySelector('.accent-option.active')?.dataset.color || 'blue',
+            dashboardLayout: document.getElementById('dashboardLayout').value,
+            fontSize: document.querySelector('.font-size-btn.active')?.dataset.size || 'medium',
+            exportFormat: document.getElementById('exportFormat').value,
+            timezone: document.getElementById('timezone').value,
+            debugMode: document.getElementById('debugMode').checked,
+            autoBackup: document.getElementById('autoBackup').checked
+        };
+    }
+    
+    // Save settings
+    async function saveSettings() {
+        const settings = getCurrentSettings();
+        localStorage.setItem('sentinelSettings', JSON.stringify(settings));
+        
+        try {
+            const res = await fetch('/api/settings/save', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(settings)
+            });
+            const data = await res.json();
+            
+            if (data.success) {
+                const modal = new bootstrap.Modal(document.getElementById('saveConfirmModal'));
+                modal.show();
+                if (window.showToast) {
+                    window.showToast('Settings saved to server', 'success');
+                }
+            } else {
+                throw new Error(data.message || 'Failed to save settings');
+            }
+        } catch (err) {
+            console.error("Error saving settings:", err);
+            if (window.showToast) {
+                window.showToast('Failed to save settings to server: ' + err.message, 'error');
+            }
+        }
+    }
+    
+    // Reset to defaults
+    async function resetToDefaults() {
+        applySettings(defaultSettings);
+        localStorage.setItem('sentinelSettings', JSON.stringify(defaultSettings));
+        
+        try {
+            await fetch('/api/settings/save', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(defaultSettings)
+            });
+            if (window.showToast) {
+                window.showToast('Settings reset to defaults on server', 'info');
+            }
+        } catch (err) {
+            console.error("Error resetting settings on server:", err);
+        }
+    }
+    
+    // Theme functions
+    function setActiveTheme(theme) {
+        themeOptions.forEach(option => {
+            if (option.dataset.theme === theme) {
+                option.classList.add('active');
+            } else {
+                option.classList.remove('active');
+            }
+        });
+    }
+    
+    function applyTheme(theme) {
+        if (theme === 'dark') {
+            document.body.classList.remove('light-mode');
+            document.body.classList.add('dark-mode');
+        } else if (theme === 'light') {
+            document.body.classList.remove('dark-mode');
+            document.body.classList.add('light-mode');
+        } else if (theme === 'system') {
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (prefersDark) {
+                document.body.classList.add('dark-mode');
+                document.body.classList.remove('light-mode');
+            } else {
+                document.body.classList.add('light-mode');
+                document.body.classList.remove('dark-mode');
+            }
+        }
+    }
+    
+    function setActiveAccent(color) {
+        accentOptions.forEach(option => {
+            if (option.dataset.color === color) {
+                option.classList.add('active');
+            } else {
+                option.classList.remove('active');
+            }
+        });
+    }
+    
+    function applyAccentColor(color) {
+        const root = document.documentElement;
+        const accentColors = {
+            blue: '#0d6efd',
+            cyan: '#0dcaf0',
+            purple: '#6f42c1',
+            green: '#198754',
+            orange: '#fd7e14',
+            red: '#dc3545'
+        };
+        
+        if (accentColors[color]) {
+            root.style.setProperty('--accent-blue', accentColors[color]);
+            root.style.setProperty('--accent-blue-dark', accentColors[color]);
+        }
+    }
+    
+    function setActiveFontSize(size) {
+        fontSizeBtns.forEach(btn => {
+            if (btn.dataset.size === size) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+    }
+    
+    function applyFontSize(size) {
+        const root = document.documentElement;
+        const fontSizes = {
+            small: '14px',
+            medium: '16px',
+            large: '18px',
+            xlarge: '20px'
+        };
+        
+        if (fontSizes[size]) {
+            root.style.setProperty('--base-font-size', fontSizes[size]);
+            document.body.style.fontSize = fontSizes[size];
+        }
+    }
+    
+    // Browse path simulation
+    function browsePath() {
+        if (window.showToast) {
+            window.showToast('File browser would open here (simulated)', 'info');
+        }
+    }
+    
+    // Event Listeners
+    saveSettingsBtn.addEventListener('click', saveSettings);
+    resetDefaultsBtn.addEventListener('click', () => {
+        const modal = new bootstrap.Modal(document.getElementById('resetConfirmModal'));
+        modal.show();
+    });
+    confirmResetBtn.addEventListener('click', () => {
+        resetToDefaults();
+        bootstrap.Modal.getInstance(document.getElementById('resetConfirmModal')).hide();
+    });
+    
+    // Toggle conditional sections
+    emailAlertsCheckbox.addEventListener('change', (e) => {
+        emailConfigSection.style.display = e.target.checked ? 'block' : 'none';
+    });
+    
+    slackIntegrationCheckbox.addEventListener('change', (e) => {
+        slackConfigSection.style.display = e.target.checked ? 'block' : 'none';
+    });
+    
+    browsePathBtn.addEventListener('click', browsePath);
+    
+    // Theme selector
+    themeOptions.forEach(option => {
+        option.addEventListener('click', () => {
+            const theme = option.dataset.theme;
+            setActiveTheme(theme);
+            applyTheme(theme);
+        });
+    });
+    
+    // Accent color selector
+    accentOptions.forEach(option => {
+        option.addEventListener('click', () => {
+            const color = option.dataset.color;
+            setActiveAccent(color);
+            applyAccentColor(color);
+        });
+    });
+    
+    // Font size selector
+    fontSizeBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const size = btn.dataset.size;
+            setActiveFontSize(size);
+            applyFontSize(size);
+        });
+    });
+    
+    // Initialize
+    loadSettings();
+</script>
+{% endblock %}

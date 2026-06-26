@@ -1,0 +1,237 @@
+{% extends "base_auth.html" %}
+{% block title %}Create Account{% endblock %}
+{% block wrapper_class %}wide{% endblock %}
+
+{% block content %}
+<div class="auth-card">
+
+    <!-- Brand -->
+    <div class="auth-brand">
+        <div class="brand-icon"><i class="bi bi-shield-lock-fill"></i></div>
+        <div class="brand-title">Create Account</div>
+        <div class="brand-sub">Join SentinelTransfer — Enterprise Security Platform</div>
+    </div>
+
+    <!-- Errors -->
+    {% if errors %}
+    <div class="auth-alert error">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <div>
+            {% for e in errors %}<div>{{ e }}</div>{% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <form method="POST" action="{{ url_for('signup') }}" id="signupForm" novalidate>
+
+        <!-- Row: First Name + Last Name -->
+        <div class="row g-3 mb-3">
+            <div class="col-sm-6">
+                <label class="form-label">First Name <span class="req">*</span></label>
+                <div class="input-wrap">
+                    <i class="bi bi-person input-icon"></i>
+                    <input type="text" name="first_name" class="auth-input" placeholder="First name"
+                           value="{{ fd.get('first_name', '') if fd else '' }}" required autocomplete="given-name">
+                </div>
+            </div>
+            <div class="col-sm-6">
+                <label class="form-label">Last Name <span class="req">*</span></label>
+                <div class="input-wrap">
+                    <i class="bi bi-person input-icon"></i>
+                    <input type="text" name="last_name" class="auth-input" placeholder="Last name"
+                           value="{{ fd.get('last_name', '') if fd else '' }}" required autocomplete="family-name">
+                </div>
+            </div>
+        </div>
+
+        <!-- Username -->
+        <div class="mb-3">
+            <label class="form-label">Username <span class="req">*</span></label>
+            <div class="input-wrap">
+                <i class="bi bi-at input-icon"></i>
+                <input type="text" name="username" class="auth-input" id="usernameInput"
+                       placeholder="Choose a unique username"
+                       value="{{ fd.get('username', '') if fd else '' }}"
+                       required autocomplete="username" oninput="checkUsername(this.value)">
+            </div>
+            <div id="usernameHint" class="pw-hint" style="display:none;"></div>
+        </div>
+
+        <!-- Email -->
+        <div class="mb-3">
+            <label class="form-label">Email Address <span class="req">*</span></label>
+            <div class="input-wrap">
+                <i class="bi bi-envelope input-icon"></i>
+                <input type="email" name="email" class="auth-input" placeholder="your@email.com"
+                       value="{{ fd.get('email', '') if fd else '' }}" required autocomplete="email">
+            </div>
+            <div class="pw-hint"><i class="bi bi-info-circle"></i> A 6-digit verification code will be sent here</div>
+        </div>
+
+        <!-- Row: Mobile + Country -->
+        <div class="row g-3 mb-3">
+            <div class="col-sm-6">
+                <label class="form-label">Mobile Number</label>
+                <div class="input-wrap">
+                    <i class="bi bi-phone input-icon"></i>
+                    <input type="tel" name="mobile" class="auth-input" placeholder="+91 9876543210"
+                           value="{{ fd.get('mobile', '') if fd else '' }}" autocomplete="tel">
+                </div>
+            </div>
+            <div class="col-sm-6">
+                <label class="form-label">Country</label>
+                <div class="input-wrap">
+                    <i class="bi bi-globe input-icon"></i>
+                    <select name="country" class="auth-select">
+                        <option value="" disabled {% if not (fd and fd.get('country')) %}selected{% endif %}>Select country</option>
+                        {% set countries = [
+                            'Afghanistan','Albania','Algeria','Andorra','Angola','Argentina','Armenia','Australia',
+                            'Austria','Azerbaijan','Bahamas','Bahrain','Bangladesh','Belarus','Belgium','Belize',
+                            'Benin','Bhutan','Bolivia','Bosnia and Herzegovina','Botswana','Brazil','Brunei',
+                            'Bulgaria','Burkina Faso','Burundi','Cambodia','Cameroon','Canada','Chad','Chile',
+                            'China','Colombia','Congo','Costa Rica','Croatia','Cuba','Cyprus','Czech Republic',
+                            'Denmark','Dominican Republic','Ecuador','Egypt','El Salvador','Estonia','Ethiopia',
+                            'Finland','France','Georgia','Germany','Ghana','Greece','Guatemala','Honduras',
+                            'Hungary','Iceland','India','Indonesia','Iran','Iraq','Ireland','Israel','Italy',
+                            'Jamaica','Japan','Jordan','Kazakhstan','Kenya','Kuwait','Kyrgyzstan','Laos',
+                            'Latvia','Lebanon','Libya','Liechtenstein','Lithuania','Luxembourg','Malaysia',
+                            'Maldives','Mali','Malta','Mexico','Moldova','Monaco','Mongolia','Montenegro',
+                            'Morocco','Mozambique','Myanmar','Namibia','Nepal','Netherlands','New Zealand',
+                            'Nicaragua','Nigeria','North Korea','Norway','Oman','Pakistan','Palestine','Panama',
+                            'Paraguay','Peru','Philippines','Poland','Portugal','Qatar','Romania','Russia',
+                            'Rwanda','Saudi Arabia','Senegal','Serbia','Singapore','Slovakia','Slovenia',
+                            'Somalia','South Africa','South Korea','Spain','Sri Lanka','Sudan','Sweden',
+                            'Switzerland','Syria','Taiwan','Tajikistan','Tanzania','Thailand','Tunisia',
+                            'Turkey','Turkmenistan','Uganda','Ukraine','United Arab Emirates',
+                            'United Kingdom','United States','Uruguay','Uzbekistan','Venezuela','Vietnam',
+                            'Yemen','Zambia','Zimbabwe'
+                        ] %}
+                        {% for c in countries %}
+                        <option value="{{ c }}" {% if fd and fd.get('country') == c %}selected{% endif %}>{{ c }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Password -->
+        <div class="mb-3">
+            <label class="form-label">New Password <span class="req">*</span></label>
+            <div class="input-wrap">
+                <i class="bi bi-lock input-icon"></i>
+                <input type="password" name="password" class="auth-input has-pw-toggle" id="pwInput"
+                       placeholder="Min. 8 characters" required autocomplete="new-password"
+                       oninput="updateStrength(this.value)">
+                <button type="button" class="toggle-pw" onclick="togglePw('pwInput', this)">
+                    <i class="bi bi-eye"></i>
+                </button>
+            </div>
+            <div class="pw-strength"><div class="pw-strength-fill" id="pwStrengthBar"></div></div>
+            <div class="pw-hint" id="pwStrengthLabel" style="margin-top:.3rem;">Enter a password</div>
+        </div>
+
+        <!-- Confirm Password -->
+        <div class="mb-4">
+            <label class="form-label">Confirm Password <span class="req">*</span></label>
+            <div class="input-wrap">
+                <i class="bi bi-lock-fill input-icon"></i>
+                <input type="password" name="confirm_password" class="auth-input has-pw-toggle" id="cpInput"
+                       placeholder="Re-enter password" required autocomplete="new-password"
+                       oninput="checkMatch()">
+                <button type="button" class="toggle-pw" onclick="togglePw('cpInput', this)">
+                    <i class="bi bi-eye"></i>
+                </button>
+            </div>
+            <div class="pw-hint" id="matchHint"></div>
+        </div>
+
+        <!-- Terms -->
+        <div class="check-wrap mb-4">
+            <input type="checkbox" id="agreeTerms" required>
+            <label class="check-label" for="agreeTerms">
+                I agree to the <a href="#" style="color:var(--blue-light);">Terms of Service</a> and
+                <a href="#" style="color:var(--blue-light);">Privacy Policy</a>
+            </label>
+        </div>
+
+        <button type="submit" class="btn-primary-auth" id="signupBtn">
+            <i class="bi bi-person-plus-fill"></i> Create Account
+        </button>
+    </form>
+
+    <div class="auth-footer" style="margin-top:1rem;">
+        Already have an account? <a href="{{ url_for('login') }}">Sign In</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function togglePw(id, btn) {
+    const inp = document.getElementById(id);
+    const icon = btn.querySelector('i');
+    if (inp.type === 'password') { inp.type = 'text'; icon.className = 'bi bi-eye-slash'; }
+    else { inp.type = 'password'; icon.className = 'bi bi-eye'; }
+}
+
+function updateStrength(pw) {
+    const bar   = document.getElementById('pwStrengthBar');
+    const label = document.getElementById('pwStrengthLabel');
+    let score = 0;
+    if (pw.length >= 8) score++;
+    if (/[A-Z]/.test(pw)) score++;
+    if (/[a-z]/.test(pw)) score++;
+    if (/[0-9]/.test(pw)) score++;
+    if (/[^A-Za-z0-9]/.test(pw)) score++;
+
+    const levels = [
+        { pct:'0%',   bg:'transparent',  txt:'' },
+        { pct:'20%',  bg:'#dc3545',      txt:'Very weak' },
+        { pct:'40%',  bg:'#fd7e14',      txt:'Weak' },
+        { pct:'60%',  bg:'#ffc107',      txt:'Fair' },
+        { pct:'80%',  bg:'#20c997',      txt:'Strong' },
+        { pct:'100%', bg:'#198754',      txt:'Very strong ✓' },
+    ];
+    const l = levels[score];
+    bar.style.width = l.pct; bar.style.background = l.bg;
+    label.textContent = l.txt; label.style.color = l.bg;
+    checkMatch();
+}
+
+function checkMatch() {
+    const pw = document.getElementById('pwInput').value;
+    const cp = document.getElementById('cpInput').value;
+    const hint = document.getElementById('matchHint');
+    if (!cp) { hint.textContent = ''; return; }
+    if (pw === cp) { hint.textContent = '✓ Passwords match'; hint.style.color = '#198754'; }
+    else           { hint.textContent = '✗ Passwords do not match'; hint.style.color = '#dc3545'; }
+}
+
+function checkUsername(val) {
+    const hint = document.getElementById('usernameHint');
+    if (val.length < 3) {
+        hint.style.display = 'block';
+        hint.textContent = 'Username must be at least 3 characters';
+        hint.style.color = '#dc3545';
+    } else if (/\s/.test(val)) {
+        hint.style.display = 'block';
+        hint.textContent = 'Username cannot contain spaces';
+        hint.style.color = '#dc3545';
+    } else {
+        hint.style.display = 'none';
+    }
+}
+
+document.getElementById('signupForm').addEventListener('submit', function(e) {
+    const terms = document.getElementById('agreeTerms');
+    const pw    = document.getElementById('pwInput').value;
+    const cp    = document.getElementById('cpInput').value;
+    if (!terms.checked) { e.preventDefault(); alert('Please agree to the Terms of Service.'); return; }
+    if (pw !== cp) { e.preventDefault(); alert('Passwords do not match.'); return; }
+
+    const btn = document.getElementById('signupBtn');
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm" style="width:16px;height:16px;border-width:2px;"></span> Creating account...';
+    btn.classList.add('loading');
+});
+</script>
+{% endblock %}

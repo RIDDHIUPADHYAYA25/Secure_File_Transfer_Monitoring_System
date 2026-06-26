@@ -1,0 +1,111 @@
+{% extends "base_auth.html" %}
+{% block title %}Sign In{% endblock %}
+
+{% block content %}
+<div class="auth-card">
+
+    <!-- Brand -->
+    <div class="auth-brand">
+        <div class="brand-icon"><i class="bi bi-shield-lock-fill"></i></div>
+        <div class="version-chip"><i class="bi bi-shield-check"></i> Enterprise v3.2.1</div>
+        <div class="brand-title">SENTINEL<span style="font-weight:300">Transfer</span></div>
+        <div class="brand-sub">Secure File Transfer Monitoring &amp; DLP</div>
+    </div>
+
+    <!-- Alerts -->
+    {% if error %}
+    <div class="auth-alert error">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <div>
+            {{ error }}
+            {% if show_resend %}
+            &nbsp;<form method="POST" action="{{ url_for('resend_verification') }}" style="display:inline">
+                <input type="hidden" name="email" value="{{ resend_email }}">
+                <button type="submit" style="background:none;border:none;color:#6ea8fe;cursor:pointer;font-size:inherit;padding:0;text-decoration:underline;">Resend code</button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+    {% if success %}
+    <div class="auth-alert success"><i class="bi bi-check-circle-fill"></i> {{ success }}</div>
+    {% endif %}
+
+    <!-- Form -->
+    <form method="POST" action="{{ url_for('login') }}" id="loginForm" novalidate>
+        <input type="hidden" name="next" value="{{ request.args.get('next', '') }}">
+
+        <div class="mb-3">
+            <label class="form-label">Username <span class="req">*</span></label>
+            <div class="input-wrap">
+                <i class="bi bi-person input-icon"></i>
+                <input type="text" name="username" class="auth-input" id="username"
+                       placeholder="Enter your username" autocomplete="username"
+                       value="{{ request.form.get('username', '') }}" required>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label" style="display:flex;justify-content:space-between;">
+                <span>Password <span class="req">*</span></span>
+                <a href="{{ url_for('forgot_password') }}" style="color:var(--blue-light);font-weight:500;font-size:.78rem;">Forgot password?</a>
+            </label>
+            <div class="input-wrap">
+                <i class="bi bi-lock input-icon"></i>
+                <input type="password" name="password" class="auth-input has-pw-toggle"
+                       id="loginPassword" placeholder="Enter your password" autocomplete="current-password" required>
+                <button type="button" class="toggle-pw" onclick="togglePw('loginPassword', this)">
+                    <i class="bi bi-eye"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="mb-4 d-flex justify-content-between align-items-center">
+            <div class="check-wrap">
+                <input type="checkbox" name="remember_me" id="rememberMe"
+                       {% if request.form.get('remember_me') %}checked{% endif %}>
+                <label class="check-label" for="rememberMe">Remember me for 30 days</label>
+            </div>
+        </div>
+
+        <button type="submit" class="btn-primary-auth" id="signInBtn">
+            <i class="bi bi-shield-lock-fill"></i> Sign In Securely
+        </button>
+    </form>
+
+    <div class="auth-divider"><span>New to SentinelTransfer?</span></div>
+
+    <a href="{{ url_for('signup') }}" class="btn-ghost w-100" style="justify-content:center;">
+        <i class="bi bi-person-plus-fill"></i> Create New Account
+    </a>
+
+    <!-- Security badges -->
+    <div class="security-row">
+        <span class="sec-badge"><i class="bi bi-shield-fill-check"></i> SOC2 Certified</span>
+        <span class="sec-badge"><i class="bi bi-lock-fill"></i> 256-bit TLS</span>
+        <span class="sec-badge"><i class="bi bi-eye-slash-fill"></i> Zero-Knowledge</span>
+    </div>
+</div>
+
+<p style="text-align:center;margin-top:.9rem;font-size:.72rem;color:var(--muted);">
+    By signing in you agree to our <a href="#" style="color:var(--blue-light);">Terms</a> &amp;
+    <a href="#" style="color:var(--blue-light);">Privacy Policy</a>
+</p>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function togglePw(id, btn) {
+    const inp = document.getElementById(id);
+    const icon = btn.querySelector('i');
+    if (inp.type === 'password') { inp.type = 'text'; icon.className = 'bi bi-eye-slash'; }
+    else { inp.type = 'password'; icon.className = 'bi bi-eye'; }
+}
+
+document.getElementById('loginForm').addEventListener('submit', function() {
+    const btn = document.getElementById('signInBtn');
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm" style="width:16px;height:16px;border-width:2px;"></span> Signing in...';
+    btn.classList.add('loading');
+});
+</script>
+{% endblock %}

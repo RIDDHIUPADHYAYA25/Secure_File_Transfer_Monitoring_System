@@ -1,0 +1,775 @@
+<!-- templates/reports.html -->
+{% extends "base.html" %}
+
+{% block title %}Reports{% endblock %}
+
+{% block breadcrumb %}
+<span class="breadcrumb-item">Analytics</span>
+<span class="breadcrumb-item active">Reports</span>
+{% endblock %}
+
+{% block content %}
+<div class="reports-container">
+    <!-- Page Header -->
+    <div class="page-header mb-4 d-flex flex-wrap justify-content-between align-items-start gap-3">
+        <div class="flex-grow-1">
+            <h2><i class="bi bi-graph-up"></i> Security Reports & Analytics</h2>
+            <p class="text-muted">Generate audit-ready exports from recorded monitoring events</p>
+        </div>
+        <div class="action-buttons d-flex flex-wrap gap-2">
+            <button class="btn btn-primary" id="generateReportBtn">
+                <i class="bi bi-plus-circle"></i> Generate Report
+            </button>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="report-stat-card">
+                <div class="stat-icon total-events">
+                    <i class="bi bi-database"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label">Total Events</span>
+                    <h3 class="stat-value" id="totalEvents">0</h3>
+                    <span class="stat-trend">Database records</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="report-stat-card">
+                <div class="stat-icon integrity-violations">
+                    <i class="bi bi-shield-slash"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label">Integrity Violations</span>
+                    <h3 class="stat-value text-warning" id="integrityViolations">0</h3>
+                    <span class="stat-trend">Hash failures</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="report-stat-card">
+                <div class="stat-icon usb-events">
+                    <i class="bi bi-usb-symbol"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label">USB Events</span>
+                    <h3 class="stat-value text-info" id="usbEvents">0</h3>
+                    <span class="stat-trend">Removable media</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="report-stat-card">
+                <div class="stat-icon sensitive-access">
+                    <i class="bi bi-exclamation-triangle"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label">Sensitive File Access</span>
+                    <h3 class="stat-value text-danger" id="sensitiveAccess">0</h3>
+                    <span class="stat-trend">Warning and critical</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row g-4 mb-4" id="chartsRow">
+        <div class="col-md-6">
+            <div class="card sentinel-card">
+                <div class="card-header">
+                    <h5><i class="bi bi-bar-chart-steps"></i> Security Events by Type</h5>
+                </div>
+                <div class="card-body">
+                    <div id="barChartEmpty" class="text-center py-5 d-none">
+                        <i class="bi bi-bar-chart text-muted" style="font-size: 3rem;"></i>
+                        <p class="text-muted mt-2">No Monitoring Data Available</p>
+                    </div>
+                    <canvas id="barChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card sentinel-card">
+                <div class="card-header">
+                    <h5><i class="bi bi-pie-chart"></i> Severity Distribution</h5>
+                </div>
+                <div class="card-body">
+                    <div id="pieChartEmpty" class="text-center py-5 d-none">
+                        <i class="bi bi-pie-chart text-muted" style="font-size: 3rem;"></i>
+                        <p class="text-muted mt-2">No Monitoring Data Available</p>
+                    </div>
+                    <canvas id="pieChart" height="250"></canvas>
+                    <div class="pie-legend-reports mt-3" id="pieLegend">
+                        <span><i class="bi bi-circle-fill text-info"></i> Info</span>
+                        <span><i class="bi bi-circle-fill text-warning"></i> Warning</span>
+                        <span><i class="bi bi-circle-fill text-danger"></i> Critical</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Trend Graph -->
+    <div class="card sentinel-card mb-4" id="trendCard">
+        <div class="card-header">
+            <h5><i class="bi bi-graph-up"></i> 30-Day Security Trend</h5>
+        </div>
+        <div class="card-body">
+            <div id="trendChartEmpty" class="text-center py-5 d-none">
+                <i class="bi bi-graph-up-arrow text-muted" style="font-size: 3rem;"></i>
+                <p class="text-muted mt-2">No Monitoring Data Available</p>
+            </div>
+            <canvas id="trendChart" height="200"></canvas>
+        </div>
+    </div>
+
+    <!-- Recent Audit Events -->
+    <div class="card sentinel-card mb-4">
+        <div class="card-header">
+            <h5><i class="bi bi-clock-history"></i> Recent Audit Events</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-sm report-events-table mb-0">
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Event</th>
+                            <th>File</th>
+                            <th>Severity</th>
+                            <th>Alert Reason</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reportRecentEventsBody">
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4">
+                                <i class="bi bi-clock-history" style="font-size: 2rem;"></i>
+                                <p class="mb-0 mt-2">Loading recent audit events...</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Monthly Summary -->
+    <div class="card sentinel-card mb-4">
+        <div class="card-header">
+            <h5><i class="bi bi-calendar-month"></i> Monthly Summary</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table monthly-summary-table">
+                    <thead>
+                        <tr>
+                            <th>Month</th>
+                            <th>Total Events</th>
+                            <th>Integrity Violations</th>
+                            <th>USB Events</th>
+                            <th>Sensitive Access</th>
+                            <th>Compliance Score</th>
+                        </tr>
+                    </thead>
+                    <tbody id="monthlySummaryBody">
+                        <!-- Dynamic content -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Reports Table -->
+    <div class="card sentinel-card">
+        <div class="card-header">
+            <h5><i class="bi bi-clock-history"></i> Recently Generated Reports</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table recent-reports-table">
+                    <thead>
+                        <tr>
+                            <th><i class="bi bi-file-text"></i> Report Name</th>
+                            <th><i class="bi bi-calendar"></i> Generated Date</th>
+                            <th><i class="bi bi-shield"></i> Status</th>
+                            <th><i class="bi bi-download"></i> Download</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recentReportsBody">
+                        <!-- Dynamic content -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Generate Report Modal -->
+<div class="modal fade" id="generateReportModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content bg-dark-modal">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-file-earmark-plus"></i> Generate Security Report</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="reportForm">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Report Type</label>
+                            <select class="form-select" id="reportType" required>
+                                <option value="comprehensive">Comprehensive Security Report</option>
+                                <option value="integrity">Integrity Check Report</option>
+                                <option value="usb">USB Activity Report</option>
+                                <option value="sensitive">Sensitive File Access Report</option>
+                                <option value="compliance">Compliance Summary Report</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Time Period</label>
+                            <select class="form-select" id="timePeriod" required>
+                                <option value="today">Today</option>
+                                <option value="yesterday">Yesterday</option>
+                                <option value="week">Last 7 Days</option>
+                                <option value="month" selected>Last 30 Days</option>
+                                <option value="quarter">Last 90 Days</option>
+                                <option value="year">Last 12 Months</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Format</label>
+                            <select class="form-select" id="reportFormat" required>
+                                <option value="pdf">PDF Document</option>
+                                <option value="csv">CSV Spreadsheet</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Include Charts</label>
+                            <select class="form-select" id="includeCharts">
+                                <option value="yes">Yes</option>
+                                <option value="no">No</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Additional Notes (Optional)</label>
+                        <textarea class="form-control" id="reportNotes" rows="3" placeholder="Add any specific requirements or notes..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmGenerateBtn">
+                    <i class="bi bi-file-earmark-text"></i> Generate Report
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay-rp" id="loadingOverlay" style="display: none;">
+    <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+    <span id="loadingMessage">Generating report...</span>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+    // Statistics State
+    let statistics = {
+        totalEvents: 0,
+        integrityViolations: 0,
+        usbEvents: 0,
+        sensitiveAccess: 0
+    };
+    
+    let monthlySummary = [];
+    let reportHistory = [];
+    let reportRecentEvents = [];
+    
+    // Chart instances
+    let barChart, pieChart, trendChart;
+    
+    // DOM Elements
+    const totalEventsSpan = document.getElementById('totalEvents');
+    const integrityViolationsSpan = document.getElementById('integrityViolations');
+    const usbEventsSpan = document.getElementById('usbEvents');
+    const sensitiveAccessSpan = document.getElementById('sensitiveAccess');
+    const monthlySummaryBody = document.getElementById('monthlySummaryBody');
+    const recentReportsBody = document.getElementById('recentReportsBody');
+    const reportRecentEventsBody = document.getElementById('reportRecentEventsBody');
+    const generateReportBtn = document.getElementById('generateReportBtn');
+    const confirmGenerateBtn = document.getElementById('confirmGenerateBtn');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    const loadingMessage = document.getElementById('loadingMessage');
+    
+    // Fetch and bind stats and chart data from endpoints
+    async function loadData() {
+        try {
+            const [statsRes, chartRes, summaryRes, historyRes] = await Promise.all([
+                fetch('/api/stats'),
+                fetch('/api/chart-data'),
+                fetch('/api/reports/summary'),
+                fetch('/api/reports/history')
+            ]);
+
+            const stats = await statsRes.json();
+            const chartData = await chartRes.json();
+            monthlySummary = await summaryRes.json();
+            reportHistory = await historyRes.json();
+            const eventsRes = await fetch('/api/audit-logs?limit=8');
+            reportRecentEvents = await eventsRes.json();
+
+            statistics = {
+                totalEvents: stats.total_events || 0,
+                integrityViolations: stats.integrity_violations || 0,
+                usbEvents: stats.usb_events || 0,
+                sensitiveAccess: stats.sensitive_access || 0
+            };
+
+            updateStatistics();
+            renderMonthlySummary();
+            renderRecentReports();
+            renderRecentAuditEvents();
+
+            const hasData = statistics.totalEvents > 0;
+            document.getElementById('barChart').classList.toggle('d-none', !hasData);
+            document.getElementById('barChartEmpty').classList.toggle('d-none', hasData);
+            document.getElementById('pieChart').classList.toggle('d-none', !hasData);
+            document.getElementById('pieLegend').classList.toggle('d-none', !hasData);
+            document.getElementById('pieChartEmpty').classList.toggle('d-none', hasData);
+            document.getElementById('trendChart').classList.toggle('d-none', !hasData);
+            document.getElementById('trendChartEmpty').classList.toggle('d-none', hasData);
+
+            if (hasData) {
+                if (barChart) {
+                    const eventCounts = chartData.event_type_counts || { labels: [], data: [] };
+                    barChart.data.labels = eventCounts.labels || [];
+                    barChart.data.datasets[0].data = eventCounts.data || [];
+                    barChart.update();
+                }
+
+                if (pieChart) {
+                    const severityCounts = chartData.severity_counts || {};
+                    const critical = severityCounts.critical || 0;
+                    const warning = severityCounts.warning || 0;
+                    const info = severityCounts.info || 0;
+                    pieChart.data.datasets[0].data = [info, warning, critical];
+                    pieChart.update();
+
+                    const total = Math.max(info + warning + critical, 1);
+                    const infoPct = ((info / total) * 100).toFixed(0);
+                    const warningPct = ((warning / total) * 100).toFixed(0);
+                    const criticalPct = ((critical / total) * 100).toFixed(0);
+                    document.getElementById('pieLegend').innerHTML = `
+                        <span><i class="bi bi-circle-fill text-info"></i> Info (${infoPct}%)</span>
+                        <span><i class="bi bi-circle-fill text-warning"></i> Warning (${warningPct}%)</span>
+                        <span><i class="bi bi-circle-fill text-danger"></i> Critical (${criticalPct}%)</span>
+                    `;
+                }
+
+                if (trendChart) {
+                    trendChart.data.labels = chartData.labels || [];
+                    trendChart.data.datasets[0].data = chartData.total_trend || [];
+                    trendChart.data.datasets[1].data = chartData.sensitive_trend || [];
+                    trendChart.update();
+                }
+            }
+        } catch (err) {
+            console.error("Error loading report data:", err);
+        }
+    }
+
+    // Update Statistics Display
+    function updateStatistics() {
+        totalEventsSpan.textContent = statistics.totalEvents.toLocaleString();
+        integrityViolationsSpan.textContent = statistics.integrityViolations.toLocaleString();
+        usbEventsSpan.textContent = statistics.usbEvents.toLocaleString();
+        sensitiveAccessSpan.textContent = statistics.sensitiveAccess.toLocaleString();
+    }
+    
+    // Render Monthly Summary Table
+    function renderMonthlySummary() {
+        if (!monthlySummary || monthlySummary.length === 0) {
+            monthlySummaryBody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-4">
+                        <i class="bi bi-calendar-x" style="font-size: 2rem;"></i>
+                        <p class="mb-0 mt-2">No monthly summary data available</p>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        monthlySummaryBody.innerHTML = monthlySummary.map(summary => `
+            <tr>
+                <td><strong>${summary.month}</strong></td>
+                <td>${(summary.totalEvents || 0).toLocaleString()}</td>
+                <td class="${summary.integrityViolations > 0 ? 'text-warning' : ''}">${summary.integrityViolations || 0}</td>
+                <td>${summary.usbEvents || 0}</td>
+                <td class="${summary.sensitiveAccess > 0 ? 'text-danger' : ''}">${summary.sensitiveAccess || 0}</td>
+                <td>
+                    <div class="compliance-score">
+                        <div class="progress" style="width: 100px;">
+                            <div class="progress-bar ${summary.complianceScore >= 95 ? 'bg-success' : summary.complianceScore >= 90 ? 'bg-warning' : 'bg-danger'}" 
+                                  style="width: ${summary.complianceScore || 0}%">${summary.complianceScore || 0}%</div>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    }
+    
+    // Render Recent Reports Table
+    function renderRecentReports() {
+        if (!reportHistory || reportHistory.length === 0) {
+            recentReportsBody.innerHTML = `
+                <tr>
+                    <td colspan="4" class="text-center text-muted py-4">
+                        <i class="bi bi-file-earmark-text" style="font-size: 2rem;"></i>
+                        <p class="mb-0 mt-2">No generated reports available</p>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        recentReportsBody.innerHTML = reportHistory.map(report => `
+            <tr>
+                <td>
+                    <div class="report-name">
+                        <i class="bi bi-file-earmark-${report.file_name.toLowerCase().endsWith('.pdf') ? 'pdf' : 'excel'}"></i>
+                        <span>${escapeHtml(report.file_name)}</span>
+                        <small class="text-muted">${escapeHtml(report.file_path || '')}</small>
+                    </div>
+                </td>
+                <td>${escapeHtml(report.generated_at)}</td>
+                <td><span class="status-badge-rp completed"><i class="bi bi-check-circle-fill"></i> ${escapeHtml(report.status || 'completed')}</span></td>
+                <td>
+                    <div class="download-buttons">
+                        <button class="btn btn-sm btn-outline-primary download-report" data-id="${report.id}">
+                            <i class="bi bi-download"></i> Download
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+
+        document.querySelectorAll('.download-report').forEach(btn => {
+            btn.addEventListener('click', () => {
+                downloadReportById(btn.dataset.id);
+            });
+        });
+    }
+
+    function renderRecentAuditEvents() {
+        if (!reportRecentEvents || reportRecentEvents.length === 0) {
+            reportRecentEventsBody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="text-center text-muted py-4">
+                        <i class="bi bi-clock-history" style="font-size: 2rem;"></i>
+                        <p class="mb-0 mt-2">No recent audit events available</p>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        reportRecentEventsBody.innerHTML = reportRecentEvents.map(log => {
+            const statusClass = log.status === 'critical' ? 'bg-danger' : log.status === 'warning' ? 'bg-warning' : 'bg-success';
+            return `
+                <tr class="clickable" data-log-id="${log.id}">
+                    <td>${escapeHtml(log.timestamp)}</td>
+                    <td>${escapeHtml(log.event_type || 'Unknown')}</td>
+                    <td title="${escapeHtml(log.file_name || '-')}">${escapeHtml(log.file_name || '-').substring(0, 32)}${(log.file_name || '').length > 32 ? '...' : ''}</td>
+                    <td>${getSeverityLabel(log.status || log.severity)}</td>
+                    <td>${escapeHtml(log.alert_reason || log.severity_reason || 'N/A')}</td>
+                </tr>
+            `;
+        }).join('');
+
+        document.querySelectorAll('#reportRecentEventsBody tr[data-log-id]').forEach(row => {
+            row.addEventListener('click', () => {
+                const log = reportRecentEvents.find(item => Number(item.id) === Number(row.dataset.logId));
+                if (!log) return;
+                window.openSharedEventDetails(log);
+            });
+        });
+    }
+
+    function getSeverityLabel(value) {
+        if (!value) return 'Unknown';
+        const normalized = value.toString().toLowerCase();
+        if (normalized === 'critical') return '<span class="badge bg-danger">Critical</span>';
+        if (normalized === 'warning') return '<span class="badge bg-warning text-dark">Warning</span>';
+        return '<span class="badge bg-success">Info</span>';
+    }
+
+    // Initialize Charts with empty datasets
+    function initCharts() {
+        // Bar Chart - Security Events by Type
+        const barCtx = document.getElementById('barChart').getContext('2d');
+        barChart = new Chart(barCtx, {
+            type: 'bar',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Event Count',
+                    data: [],
+                    backgroundColor: 'rgba(13, 110, 253, 0.8)',
+                    borderColor: 'rgba(13, 110, 253, 1)',
+                    borderWidth: 1,
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { labels: { color: '#e9ecef' } },
+                    tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.raw.toLocaleString()}` } }
+                },
+                scales: {
+                    y: { 
+                        grid: { color: '#23252e' }, 
+                        ticks: { color: '#adb5bd' },
+                        title: { display: true, text: 'Number of Events', color: '#adb5bd' }
+                    },
+                    x: { 
+                        grid: { color: '#23252e' }, 
+                        ticks: { color: '#adb5bd', rotation: -15 }
+                    }
+                }
+            }
+        });
+        
+        // Pie Chart - Severity Distribution
+        const pieCtx = document.getElementById('pieChart').getContext('2d');
+        pieChart = new Chart(pieCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Info', 'Warning', 'Critical'],
+                datasets: [{
+                    data: [0, 0, 0],
+                    backgroundColor: ['#0dcaf0', '#ffc107', '#dc3545'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${ctx.raw.toLocaleString()}` } }
+                }
+            }
+        });
+        
+        // Trend Chart - 30-Day Security Trend
+        const trendCtx = document.getElementById('trendChart').getContext('2d');
+        trendChart = new Chart(trendCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        label: 'Security Events',
+                        data: [],
+                        borderColor: '#0d6efd',
+                        backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    },
+                    {
+                        label: 'Violations',
+                        data: [],
+                        borderColor: '#dc3545',
+                        backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { labels: { color: '#e9ecef' } },
+                    tooltip: { mode: 'index', intersect: false }
+                },
+                scales: {
+                    y: { 
+                        grid: { color: '#23252e' }, 
+                        ticks: { color: '#adb5bd' },
+                        title: { display: true, text: 'Event Count', color: '#adb5bd' }
+                    },
+                    x: { 
+                        grid: { color: '#23252e' }, 
+                        ticks: { color: '#adb5bd', maxRotation: 45, autoSkip: true, maxTicksLimit: 10 }
+                    }
+                }
+            }
+        });
+    }
+    
+    async function downloadGeneratedFile(downloadUrl, fallbackName) {
+        const response = await fetch(downloadUrl);
+        const contentType = response.headers.get('content-type') || '';
+
+        if (!response.ok) {
+            let message = 'Report generation failed';
+            if (contentType.includes('application/json')) {
+                const errorBody = await response.json();
+                message = errorBody.message || message;
+            }
+            throw new Error(message);
+        }
+
+        const blob = await response.blob();
+        const disposition = response.headers.get('content-disposition') || '';
+        const match = disposition.match(/filename="?([^"]+)"?/i);
+        const filename = match ? match[1] : fallbackName;
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = filename;
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+        URL.revokeObjectURL(url);
+    }
+
+    async function generateReport(reportData) {
+        loadingOverlay.style.display = 'flex';
+        loadingMessage.textContent = 'Generating report...';
+        const downloadUrl = `/api/reports/download?format=${reportData.format}&type=${reportData.type}&timePeriod=${reportData.timePeriod}&notes=${encodeURIComponent(reportData.notes)}`;
+        try {
+            await downloadGeneratedFile(downloadUrl, `${reportData.type}_${new Date().toISOString().slice(0, 10)}.${reportData.format}`);
+            if (window.showToast) {
+                window.showToast('Report downloaded successfully', 'success');
+            }
+            await loadData();
+        } catch (err) {
+            console.error('Report generation failed:', err);
+            if (window.showToast) {
+                window.showToast(err.message || 'Report generation failed', 'error');
+            }
+        } finally {
+            loadingOverlay.style.display = 'none';
+        }
+    }
+
+    async function downloadReportById(reportId) {
+        const downloadUrl = `/api/reports/history/download/${reportId}`;
+        try {
+            await downloadGeneratedFile(downloadUrl, `sentinel_report_${reportId}`);
+            if (window.showToast) {
+                window.showToast('Report downloaded successfully', 'success');
+            }
+        } catch (err) {
+            if (window.showToast) {
+                window.showToast(err.message || 'Report download failed', 'error');
+            }
+        }
+    }
+
+    function exportCurrentViewAsCSV() {
+        generateReport({ format: 'csv', type: 'Monthly_Security_Summary', timePeriod: 'Last_30_Days', notes: '' });
+    }
+
+    function exportCurrentViewAsPDF() {
+        generateReport({ format: 'pdf', type: 'Monthly_Security_Summary', timePeriod: 'Last_30_Days', notes: '' });
+    }
+    
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+    
+    // Event Listeners
+    generateReportBtn.addEventListener('click', () => {
+        const modal = new bootstrap.Modal(document.getElementById('generateReportModal'));
+        modal.show();
+    });
+    
+    confirmGenerateBtn.addEventListener('click', () => {
+        const reportType = document.getElementById('reportType').value;
+        const timePeriod = document.getElementById('timePeriod').value;
+        const reportFormat = document.getElementById('reportFormat').value;
+        const includeCharts = document.getElementById('includeCharts').value;
+        const reportNotes = document.getElementById('reportNotes').value;
+        
+        const typeMap = {
+            'comprehensive': 'Comprehensive_Security_Report',
+            'integrity': 'Integrity_Check_Report',
+            'usb': 'USB_Activity_Report',
+            'sensitive': 'Sensitive_Access_Report',
+            'compliance': 'Compliance_Summary_Report'
+        };
+        
+        const periodMap = {
+            'today': 'Today',
+            'yesterday': 'Yesterday',
+            'week': 'Last_7_Days',
+            'month': 'Last_30_Days',
+            'quarter': 'Last_90_Days',
+            'year': 'Last_12_Months'
+        };
+        
+        const reportData = {
+            type: typeMap[reportType],
+            timePeriod: periodMap[timePeriod],
+            format: reportFormat,
+            includeCharts: includeCharts,
+            notes: reportNotes
+        };
+        
+        bootstrap.Modal.getInstance(document.getElementById('generateReportModal')).hide();
+        generateReport(reportData);
+    });
+    
+    // Add export buttons to page header
+    function addExportButtons() {
+        const actionButtons = document.querySelector('.action-buttons');
+        if (actionButtons) {
+            const exportGroup = document.createElement('div');
+            exportGroup.className = 'btn-group ms-2';
+            exportGroup.innerHTML = `
+                <button class="btn btn-outline-success" id="exportCsvViewBtn">
+                    <i class="bi bi-filetype-csv"></i> Export CSV
+                </button>
+                <button class="btn btn-outline-danger" id="exportPdfViewBtn">
+                    <i class="bi bi-filetype-pdf"></i> Export PDF
+                </button>
+            `;
+            actionButtons.appendChild(exportGroup);
+            
+            document.getElementById('exportCsvViewBtn').addEventListener('click', exportCurrentViewAsCSV);
+            document.getElementById('exportPdfViewBtn').addEventListener('click', exportCurrentViewAsPDF);
+        }
+    }
+    
+    // Initialize page
+    async function init() {
+        updateStatistics();
+        renderMonthlySummary();
+        renderRecentReports();
+        initCharts();
+        addExportButtons();
+        await loadData();
+    }
+    
+    init();
+</script>
+{% endblock %}

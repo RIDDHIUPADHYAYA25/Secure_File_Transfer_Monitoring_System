@@ -1,0 +1,3 @@
+# List sensitive file names here (one per line)
+# Example: confidential_report.pdf
+# Do not store simulated or documentation-only filenames in this file.

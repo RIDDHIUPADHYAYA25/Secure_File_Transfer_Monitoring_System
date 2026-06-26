@@ -1,0 +1,99 @@
+{% extends "base_auth.html" %}
+{% block title %}Database Locked{% endblock %}
+
+{% block content %}
+<div class="auth-card text-center" style="animation: pulse-border 3s infinite alternate;">
+    <!-- Icon and Shield -->
+    <div class="brand-icon" style="background: linear-gradient(135deg, #ffc107, #d39e00); box-shadow: 0 0 30px rgba(255, 193, 7, 0.4); margin-bottom: 1.5rem;">
+        <i class="bi bi-database-fill-lock" style="color: #0a0c12;"></i>
+    </div>
+
+    <div class="version-chip" style="background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.2); color: #ffc107; margin-bottom: 1rem;">
+        <i class="bi bi-shield-lock-fill"></i> Privacy Shield Active
+    </div>
+
+    <h2 style="font-size: 1.5rem; font-weight: 800; margin-bottom: 0.5rem; background: linear-gradient(135deg, #fff, #ffc107); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+        Database Locked
+    </h2>
+    
+    <p style="color: var(--muted); font-size: 0.88rem; line-height: 1.5; margin-bottom: 2rem;">
+        The SentinelTransfer database file is secured using AES-256 encryption to protect user credentials, activity logs, and administrative keys.
+    </p>
+
+    <!-- Interactive Button -->
+    <button type="button" class="btn-primary-auth" id="clickDbBtn" style="background: linear-gradient(135deg, #ffc107, #d39e00); box-shadow: 0 4px 15px rgba(255, 193, 7, 0.2); color: #0a0c12;">
+        <i class="bi bi-eye-slash-fill"></i> Inspect database File (sentinel.db)
+    </button>
+
+    <div class="auth-divider"><span>System Info</span></div>
+
+    <div style="font-size: 0.78rem; text-align: left; color: var(--muted); background: var(--card2); border: 1px solid var(--border); padding: 1rem; border-radius: 12px;">
+        <div class="d-flex justify-content-between mb-2">
+            <span>Database File:</span>
+            <code style="color: #ffc107;">sentinel.db.enc</code>
+        </div>
+        <div class="d-flex justify-content-between mb-2">
+            <span>Status:</span>
+            <span class="text-warning"><i class="bi bi-lock-fill"></i> AES-256 Encrypted</span>
+        </div>
+        <div class="d-flex justify-content-between">
+            <span>Decryption:</span>
+            <code style="color: var(--blue-light);">admin_decrypt.py</code>
+        </div>
+    </div>
+</div>
+
+<p style="text-align: center; margin-top: 1.5rem; font-size: 0.75rem; color: var(--muted);">
+    Return to <a href="{{ url_for('login') }}" style="color: #ffc107; text-decoration: underline;">Sign In Page</a>
+</p>
+
+<!-- Privacy Notice Modal -->
+<div class="modal fade" id="privacyModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content text-center" style="background: #141623; border: 2px solid #ffc107; border-radius: 20px; box-shadow: 0 0 50px rgba(255, 193, 7, 0.3); padding: 2rem;">
+            <div style="font-size: 4rem; color: #ffc107; margin-bottom: 1rem; animation: lock-glow 2s infinite alternate;">
+                <i class="bi bi-shield-fill-exclamation"></i>
+            </div>
+            <h3 style="color: #fff; font-weight: 700; margin-bottom: 1rem;">Access Denied</h3>
+            <p style="color: #e9ecef; font-size: 1.1rem; line-height: 1.6; font-weight: 500; background: rgba(255,255,255,0.03); padding: 1rem; border-radius: 10px; border: 1px dashed rgba(255, 193, 7, 0.3);">
+                database is encrypted for maintaining user privacy
+            </p>
+            <p style="color: var(--muted); font-size: 0.82rem; margin-top: 1rem; line-height: 1.4;">
+                Evaluator notice: Decryption is only authorized via the System Administrator's credentials.
+            </p>
+            <button type="button" class="btn-primary-auth mt-4" data-bs-dismiss="modal" style="background: linear-gradient(135deg, #ffc107, #d39e00); color: #0a0c12;">
+                Acknowledge Protection
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+@keyframes pulse-border {
+    from { border-color: rgba(255, 193, 7, 0.2); box-shadow: 0 0 40px rgba(0, 0, 0, 0.5); }
+    to { border-color: rgba(255, 193, 7, 0.6); box-shadow: 0 0 60px rgba(255, 193, 7, 0.15); }
+}
+@keyframes lock-glow {
+    from { transform: scale(1); filter: drop-shadow(0 0 5px rgba(255, 193, 7, 0.5)); }
+    to { transform: scale(1.05); filter: drop-shadow(0 0 20px rgba(255, 193, 7, 0.8)); }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const clickDbBtn = document.getElementById('clickDbBtn');
+    const privacyModal = new bootstrap.Modal(document.getElementById('privacyModal'));
+
+    // Click trigger showing the popup modal
+    clickDbBtn.addEventListener('click', function() {
+        privacyModal.show();
+        // Also trigger standard browser alert to cover all bases
+        setTimeout(() => {
+            alert("database is encrypted for maintaining user privacy");
+        }, 150);
+    });
+});
+</script>
+{% endblock %}

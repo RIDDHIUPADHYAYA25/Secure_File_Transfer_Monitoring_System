@@ -1,0 +1,494 @@
+<!-- templates/usb_monitoring.html -->
+{% extends "base.html" %}
+
+{% block title %}USB Monitoring{% endblock %}
+
+{% block breadcrumb %}
+<span class="breadcrumb-item">Security</span>
+<span class="breadcrumb-item active">USB Monitoring</span>
+{% endblock %}
+
+{% block content %}
+<div class="usb-monitoring-container">
+    <!-- Page Header -->
+    <div class="page-header mb-4 d-flex flex-wrap justify-content-between align-items-start gap-3">
+        <div class="flex-grow-1">
+            <h2><i class="bi bi-usb-symbol"></i> USB Device Monitoring</h2>
+            <p class="text-muted">Real-time monitoring of USB storage devices and file transfer activities</p>
+        </div>
+        <div class="detection-status d-inline-flex flex-wrap align-items-center gap-2" id="detectionStatus">
+            <span class="status-dot active"></span>
+            <span>Device Detection Active</span>
+            <span class="badge bg-primary" id="deviceCount">0 devices</span>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="usb-stat-card">
+                <div class="stat-icon usb-total">
+                    <i class="bi bi-usb-drive"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label">Total USB Devices</span>
+                    <h3 class="stat-value" id="totalDevices">0</h3>
+                    <span class="stat-trend">All time</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="usb-stat-card">
+                <div class="stat-icon usb-active">
+                    <i class="bi bi-plug-fill"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label">Active Devices</span>
+                    <h3 class="stat-value text-success" id="activeDevices">0</h3>
+                    <span class="stat-trend">Currently connected</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="usb-stat-card">
+                <div class="stat-icon usb-blocked">
+                    <i class="bi bi-shield-slash"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label">Blocked Transfers</span>
+                    <h3 class="stat-value text-warning" id="blockedTransfers">0</h3>
+                    <span class="stat-trend">Last 30 days</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="usb-stat-card">
+                <div class="stat-icon usb-sensitive">
+                    <i class="bi bi-exclamation-triangle"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label">Sensitive Files Copied</span>
+                    <h3 class="stat-value text-danger" id="sensitiveFiles">0</h3>
+                    <span class="stat-trend">Security violations</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Connected USB Devices Table -->
+    <div class="card sentinel-card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5><i class="bi bi-hdd-stack"></i> Connected USB Devices</h5>
+            <div class="card-controls">
+                <button class="btn btn-sm btn-outline-primary" id="refreshDevicesBtn">
+                    <i class="bi bi-arrow-clockwise"></i> Refresh
+                </button>
+                <button class="btn btn-sm btn-outline-danger" id="ejectAllBtn" style="display: none;">
+                    <i class="bi bi-eject"></i> Eject All
+                </button>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table usb-devices-table">
+                    <thead>
+                        <tr>
+                            <th><i class="bi bi-hdd"></i> Device Name</th>
+                            <th><i class="bi bi-folder"></i> Drive Letter</th>
+                            <th><i class="bi bi-clock"></i> Connection Time</th>
+                            <th><i class="bi bi-files"></i> Files Copied</th>
+                            <th><i class="bi bi-shield-check"></i> Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usbDevicesTableBody">
+                        <!-- Dynamic content -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+
+
+    <div class="card sentinel-card">
+        <div class="card-header">
+            <h5><i class="bi bi-clock-history"></i> Recent USB Events</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table recent-events-table">
+                    <thead>
+                        <tr>
+                            <th><i class="bi bi-calendar"></i> Timestamp</th>
+                            <th><i class="bi bi-usb"></i> Device</th>
+                            <th><i class="bi bi-activity"></i> Event Type</th>
+                            <th><i class="bi bi-person"></i> User</th>
+                            <th><i class="bi bi-file-earmark"></i> File/Details</th>
+                            <th><i class="bi bi-shield"></i> Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recentEventsTableBody">
+                        <!-- Dynamic content -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="table-footer p-3 text-center text-muted">
+                <span id="eventCount">0</span> events recorded
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Eject Confirmation Modal -->
+<div class="modal fade" id="ejectConfirmModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark-modal">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-usb-symbol"></i> Eject USB Device</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to eject <strong id="ejectDeviceName"></strong>?</p>
+                <p class="text-muted small">This will safely remove the device. All file transfers will be interrupted.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning" id="confirmEjectBtn">Eject Device</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // USB Devices and Activities State
+    let usbDevices = [];
+    let usbActivities = [];
+    let sensitiveAlerts = [];
+    let recentEvents = [];
+
+    // DOM Elements
+    const devicesTableBody = document.getElementById('usbDevicesTableBody');
+    const recentEventsTableBody = document.getElementById('recentEventsTableBody');
+    const totalDevicesSpan = document.getElementById('totalDevices');
+    const activeDevicesSpan = document.getElementById('activeDevices');
+    const blockedTransfersSpan = document.getElementById('blockedTransfers');
+    const sensitiveFilesSpan = document.getElementById('sensitiveFiles');
+    const deviceCountBadge = document.getElementById('deviceCount');
+    const eventCountSpan = document.getElementById('eventCount');
+    const refreshDevicesBtn = document.getElementById('refreshDevicesBtn');
+    const ejectAllBtn = document.getElementById('ejectAllBtn');
+
+    // Helper Functions
+    function getStatusBadge(status) {
+        if (status === 'active') {
+            return '<span class="usb-status-badge active"><i class="bi bi-plug-fill"></i> Active</span>';
+        } else if (status === 'idle') {
+            return '<span class="usb-status-badge idle"><i class="bi bi-clock"></i> Idle</span>';
+        } else {
+            return '<span class="usb-status-badge blocked"><i class="bi bi-shield-slash"></i> Blocked</span>';
+        }
+    }
+
+    function getActionBadge(action) {
+        switch(action) {
+            case 'Alerted':
+                return '<span class="action-badge alerted"><i class="bi bi-bell-fill"></i> Alerted</span>';
+            case 'Blocked':
+                return '<span class="action-badge blocked"><i class="bi bi-shield-slash"></i> Blocked</span>';
+            case 'Allowed':
+                return '<span class="action-badge allowed"><i class="bi bi-check-circle"></i> Allowed</span>';
+            case 'Logged':
+                return '<span class="action-badge logged"><i class="bi bi-info-circle"></i> Logged</span>';
+            default:
+                return '<span class="action-badge default">' + action + '</span>';
+        }
+    }
+
+    function getSeverityBadge(severity) {
+        switch(severity) {
+            case 'critical':
+                return '<span class="severity-badge critical"><i class="bi bi-shield-exclamation"></i> Critical</span>';
+            case 'high':
+                return '<span class="severity-badge high"><i class="bi bi-exclamation-triangle"></i> High</span>';
+            case 'medium':
+                return '<span class="severity-badge medium"><i class="bi bi-warning"></i> Medium</span>';
+            default:
+                return '<span class="severity-badge low"><i class="bi bi-info"></i> Low</span>';
+        }
+    }
+
+    function getActivityIcon(type) {
+        switch(type) {
+            case 'connected':
+                return '<i class="bi bi-usb-plug-fill text-success"></i>';
+            case 'disconnected':
+                return '<i class="bi bi-eject-fill text-warning"></i>';
+            case 'file_copy':
+                return '<i class="bi bi-files text-info"></i>';
+            case 'blocked':
+                return '<i class="bi bi-shield-slash text-danger"></i>';
+            default:
+                return '<i class="bi bi-record-circle"></i>';
+        }
+    }
+
+    function formatTimestamp(timestamp) {
+        const date = new Date(timestamp);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMins = Math.floor(diffMs / 60000);
+        
+        if (diffMins < 1) return 'Just now';
+        if (diffMins < 60) return `${diffMins} min ago`;
+        if (diffMins < 1440) return `${Math.floor(diffMins / 60)} hours ago`;
+        return timestamp.substring(5, 16);
+    }
+
+    function resolveDeviceName(path, details) {
+        if (path && path.includes(':')) {
+            const drive = path.split(':')[0] + ':';
+            const dev = usbDevices.find(d => d.driveLetter.toUpperCase() === drive.toUpperCase());
+            if (dev) return dev.name;
+        }
+        if (details) {
+            const match = details.match(/drive ([A-Z]:)/i);
+            if (match) {
+                const drive = match[1];
+                const dev = usbDevices.find(d => d.driveLetter.toUpperCase() === drive.toUpperCase());
+                if (dev) return dev.name;
+                return `USB Drive (${drive})`;
+            }
+        }
+        return "USB Drive";
+    }
+
+    // Render Functions
+    function renderDevicesTable() {
+        const activeCount = usbDevices.filter(d => d.status === 'active').length;
+        
+        if (usbDevices.length === 0) {
+            devicesTableBody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="text-center text-muted py-5">
+                        <i class="bi bi-usb-symbol" style="font-size: 3rem;"></i>
+                        <p class="mt-2">No USB devices connected</p>
+                    </td>
+                </tr>
+            `;
+            ejectAllBtn.style.display = 'none';
+        } else {
+            devicesTableBody.innerHTML = usbDevices.map(device => `
+                <tr class="device-row ${device.status}">
+                    <td>
+                        <div class="device-info">
+                            <i class="bi bi-hdd-stack-fill"></i>
+                            <div>
+                                <strong>${escapeHtml(device.name)}</strong>
+                                <small>${device.manufacturer || ''}</small>
+                            </div>
+                        </div>
+                    </td>
+                    <td><code class="drive-letter">${device.driveLetter}\\</code></td>
+                    <td class="timestamp-cell">${formatTimestamp(device.connectionTime)}</td>
+                    <td><span class="files-count">${device.filesCopied.toLocaleString()}</span></td>
+                    <td>${getStatusBadge(device.status)}</td>
+                </tr>
+            `).join('');
+            ejectAllBtn.style.display = activeCount > 0 ? 'inline-block' : 'none';
+        }
+        
+        totalDevicesSpan.textContent = usbDevices.length;
+        activeDevicesSpan.textContent = activeCount;
+        deviceCountBadge.textContent = `${activeCount} active`;
+    }
+
+
+    function renderRecentEvents() {
+        if (recentEvents.length === 0) {
+            recentEventsTableBody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-5">
+                        <i class="bi bi-calendar-x" style="font-size: 2rem;"></i>
+                        <p>No recent events</p>
+                    </td>
+                </tr>
+            `;
+        } else {
+            recentEventsTableBody.innerHTML = recentEvents.map(event => `
+                <tr>
+                    <td class="timestamp-cell">${formatTimestamp(event.timestamp)}</td>
+                    <td><strong>${escapeHtml(event.device)}</strong></td>
+                    <td><span class="event-type-badge">${event.eventType}</span></td>
+                    <td><i class="bi bi-person-circle"></i> ${event.user}</td>
+                    <td class="event-details" title="${escapeHtml(event.details)}">${escapeHtml(event.details.substring(0, 50))}${event.details.length > 50 ? '...' : ''}</td>
+                    <td>${getActionBadge(event.action)}</td>
+                </tr>
+            `).join('');
+        }
+        
+        eventCountSpan.textContent = recentEvents.length;
+    }
+
+    function updateStatistics() {
+        const blockedCount = recentEvents.filter(e => e.action === 'Blocked').length;
+        const sensitiveCount = sensitiveAlerts.length;
+        
+        blockedTransfersSpan.textContent = blockedCount;
+        sensitiveFilesSpan.textContent = sensitiveCount;
+    }
+
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    // Load Data from APIs
+    async function loadData() {
+        try {
+            // Fetch connected USB devices
+            const devicesRes = await fetch('/api/usb-devices');
+            usbDevices = await devicesRes.json();
+            
+            // Fetch audit logs
+            const logsRes = await fetch('/api/audit-logs?limit=1000');
+            const allLogs = await logsRes.json();
+            
+            const driveLetters = usbDevices.map(d => d.driveLetter.toUpperCase());
+            
+            // Filter logs for USB-related events
+            const usbLogs = allLogs.filter(log => {
+                const srcDrive = log.source_path ? (log.source_path.split(':')[0] + ':').toUpperCase() : '';
+                const destDrive = log.destination_path ? (log.destination_path.split(':')[0] + ':').toUpperCase() : '';
+                const hasUSBDrive = (srcDrive && driveLetters.includes(srcDrive)) || (destDrive && driveLetters.includes(destDrive));
+                const detLower = (log.details || '').toLowerCase();
+                const hasUSBKeyword = detLower.includes('usb') || detLower.includes('removable') || detLower.includes('external');
+                return hasUSBDrive || hasUSBKeyword;
+            });
+            
+            // Map to usbActivities
+            usbActivities = usbLogs.map(log => {
+                let type = 'file_copy';
+                const detLower = (log.details || '').toLowerCase();
+                if (detLower.includes('ejected') || detLower.includes('disconnected')) {
+                    type = 'disconnected';
+                } else if (detLower.includes('connected') || detLower.includes('detected')) {
+                    type = 'connected';
+                } else if (log.status === 'critical' || detLower.includes('blocked')) {
+                    type = 'blocked';
+                }
+                return {
+                    id: log.id,
+                    timestamp: log.timestamp,
+                    device: resolveDeviceName(log.source_path || log.destination_path, log.details),
+                    type: type,
+                    user: log.user || 'system',
+                    details: log.details || ''
+                };
+            });
+            
+            // Map to recentEvents
+            recentEvents = usbLogs.map(log => {
+                let action = 'Logged';
+                if (log.status === 'critical') {
+                    action = (log.details || '').toLowerCase().includes('blocked') ? 'Blocked' : 'Alerted';
+                } else if (log.status === 'warning') {
+                    action = 'Alerted';
+                } else if (log.status === 'safe') {
+                    action = 'Allowed';
+                }
+                return {
+                    id: log.id,
+                    timestamp: log.timestamp,
+                    device: resolveDeviceName(log.source_path || log.destination_path, log.details),
+                    eventType: log.event_type || 'Activity',
+                    user: log.user || 'system',
+                    details: log.details || '',
+                    action: action
+                };
+            });
+            
+            // Map to sensitiveAlerts (filter usb logs that are warnings or criticals)
+            const sensitiveLogs = usbLogs.filter(log => log.status === 'warning' || log.status === 'critical');
+            sensitiveAlerts = sensitiveLogs.map(log => {
+                let reason = "Policy Violation";
+                const detLower = (log.details || '').toLowerCase();
+                if (detLower.includes('pii') || detLower.includes('personal')) reason = "PII Data Detected";
+                else if (detLower.includes('confidential')) reason = "Confidential Document";
+                else if (detLower.includes('ip theft')) reason = "IP Theft Attempt";
+                else if (detLower.includes('integrity') || detLower.includes('tamper') || detLower.includes('mismatch')) reason = "Integrity Violation";
+                
+                let action = 'Logged';
+                if (log.status === 'critical') {
+                    action = detLower.includes('blocked') ? 'Blocked' : 'Alerted';
+                } else if (log.status === 'warning') {
+                    action = 'Alerted';
+                }
+                
+                return {
+                    id: log.id,
+                    timestamp: log.timestamp,
+                    device: resolveDeviceName(log.source_path || log.destination_path, log.details),
+                    file: log.file_name,
+                    reason: reason,
+                    severity: log.status,
+                    action: action
+                };
+            });
+            
+            renderDevicesTable();
+            renderRecentEvents();
+            updateStatistics();
+        } catch (err) {
+            console.error("Error loading USB data:", err);
+        }
+    }
+
+    // Refresh all data
+    async function refreshData() {
+        await loadData();
+        if (window.showToast) {
+            window.showToast('USB monitoring data refreshed', 'success');
+        }
+    }
+
+    // Eject device (simulate safe eject on client-side state)
+    function ejectDevice(deviceId) {
+        const device = usbDevices.find(d => d.id === deviceId);
+        if (device && device.status === 'active') {
+            device.status = 'disconnected';
+            
+            if (window.showToast) {
+                window.showToast(`${device.name} ejected successfully`, 'success');
+            }
+            renderDevicesTable();
+        }
+    }
+
+    // Event Listeners
+    refreshDevicesBtn.addEventListener('click', refreshData);
+    
+    // Polling interval to refresh USB status dynamically
+    let pollInterval;
+    function startPolling() {
+        pollInterval = setInterval(loadData, 5000);
+    }
+    
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', () => {
+        if (pollInterval) {
+            clearInterval(pollInterval);
+        }
+    });
+    
+    // Initialize
+    async function init() {
+        await loadData();
+        startPolling();
+    }
+    
+    init();
+</script>
+{% endblock %}
