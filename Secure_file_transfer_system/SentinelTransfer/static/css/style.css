@@ -1,10 +1,6 @@
-/* static/css/style.css - Unified Design System */
 
-/* ==================================================
-   CSS VARIABLES - DESIGN TOKENS
-   ================================================== */
 :root {
-    /* Dark Theme Colors */
+   
     --bg-primary: #0a0c12;
     --bg-secondary: #0f1118;
     --bg-tertiary: #151722;
@@ -12,12 +8,12 @@
     --bg-sidebar: #0c0e15;
     --bg-hover: rgba(13, 110, 253, 0.08);
     
-    /* Text Colors */
+   
     --text-primary: #e9ecef;
     --text-secondary: #8b92a8;
     --text-muted: #5a627a;
     
-    /* Accent Colors */
+   
     --accent-blue: #0d6efd;
     --accent-blue-dark: #0b5ed7;
     --accent-cyan: #0dcaf0;
@@ -26,20 +22,20 @@
     --accent-danger: #dc3545;
     --accent-purple: #6f42c1;
     
-    /* Border Colors */
+   
     --border-light: rgba(255, 255, 255, 0.05);
     --border-medium: rgba(255, 255, 255, 0.08);
     
-    /* Shadows */
+    
     --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
     --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
     --shadow-glow: 0 0 20px rgba(13, 110, 253, 0.15);
     
-    /* Transitions */
+    
     --transition-fast: 0.15s ease;
     --transition-normal: 0.25s ease;
     
-    /* Spacing */
+    
     --spacing-xs: 0.25rem;
     --spacing-sm: 0.5rem;
     --spacing-md: 1rem;
@@ -47,20 +43,18 @@
     --spacing-xl: 2rem;
     --spacing-2xl: 3rem;
     
-    /* Border Radius */
+  
     --radius-sm: 6px;
     --radius-md: 10px;
     --radius-lg: 12px;
     --radius-xl: 16px;
     
-    /* Sidebar Width */
+   
     --sidebar-width: 280px;
 }
 
-/* ==================================================
-   GLOBAL STYLES
-   ================================================== */
-* {
+
+ {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
@@ -75,7 +69,6 @@ body {
     font-size: 14px;
 }
 
-/* Scrollbar */
 ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -90,9 +83,7 @@ body {
     border-radius: 10px;
 }
 
-/* ==================================================
-   UNIFIED CARD STYLES
-   ================================================== */
+
 .sentinel-card {
     background: var(--bg-card);
     border: 1px solid var(--border-light);
@@ -134,9 +125,6 @@ body {
     padding: var(--spacing-lg);
 }
 
-/* ==================================================
-   UNIFIED TABLE STYLES
-   ================================================== */
 .data-table {
     width: 100%;
     margin-bottom: 0;
@@ -169,9 +157,7 @@ body {
     background: var(--bg-hover);
 }
 
-/* ==================================================
-   UNIFIED BUTTON STYLES
-   ================================================== */
+
 .btn {
     border-radius: var(--radius-md);
     padding: 0.5rem 1rem;
@@ -208,9 +194,7 @@ body {
     font-size: 0.75rem;
 }
 
-/* ==================================================
-   UNIFIED STATISTICS CARDS
-   ================================================== */
+
 .stat-card {
     background: var(--bg-card);
     border: 1px solid var(--border-light);
@@ -258,9 +242,7 @@ body {
     line-height: 1;
 }
 
-/* ==================================================
-   UNIFIED STATUS BADGES
-   ================================================== */
+
 .status-badge {
     display: inline-flex;
     align-items: center;
@@ -293,9 +275,7 @@ body {
     color: #6ea8fe;
 }
 
-/* ==================================================
-   UNIFIED PAGINATION
-   ================================================== */
+
 .pagination-container {
     display: flex;
     justify-content: space-between;
@@ -349,9 +329,6 @@ body {
     color: white;
 }
 
-/* ==================================================
-   UNIFIED MODAL STYLES
-   ================================================== */
 .modal-content.bg-dark-modal {
     background: var(--bg-card);
     border: 1px solid var(--border-light);
@@ -406,9 +383,6 @@ body {
     background: rgba(255, 255, 255, 0.05);
 }
 
-/* ==================================================
-   UNIFIED SEARCH & FILTER BAR
-   ================================================== */
 .search-wrapper {
     position: relative;
 }
@@ -460,9 +434,6 @@ body {
     border-radius: var(--radius-md);
 }
 
-/* ==================================================
-   UNIFIED FORM ELEMENTS
-   ================================================== */
 .form-control,
 .form-select {
     background: var(--bg-tertiary);
@@ -492,9 +463,7 @@ body {
     color: var(--accent-cyan);
 }
 
-/* ==================================================
-   UNIFIED SIDEBAR STYLES
-   ================================================== */
+
 .sentinel-sidebar {
     position: fixed;
     left: 0;
@@ -537,9 +506,6 @@ body {
     border-left: 3px solid var(--accent-blue);
 }
 
-/* ==================================================
-   UNIFIED TOPBAR STYLES
-   ================================================== */
 .sentinel-topbar {
     height: 70px;
     background: rgba(10, 12, 18, 0.75);
@@ -581,7 +547,7 @@ body {
     flex: 1;
 }
 
-/* Sidebar Toggle */
+
 .sidebar-toggle {
     background: rgba(255, 255, 255, 0.02);
     border: 1px solid var(--border-light);
@@ -602,7 +568,7 @@ body {
     border-color: var(--accent-cyan);
 }
 
-/* Breadcrumb Navigation */
+
 .breadcrumb-nav {
     display: flex;
     align-items: center;
@@ -627,14 +593,14 @@ body {
 }
 
 .breadcrumb-nav .breadcrumb-item + .breadcrumb-item::before {
-    content: "\F285"; /* bootstrap icon chevron-right */
+    content: "\F285"; 
     font-family: "bootstrap-icons";
     font-size: 0.7rem;
     padding: 0 0.5rem;
     color: var(--text-muted);
 }
 
-/* Center Search Container */
+
 .search-container {
     position: relative;
     width: 100%;
@@ -688,7 +654,7 @@ body {
     pointer-events: none;
 }
 
-/* Mobile Search Toggle button */
+
 .search-toggle-btn {
     background: rgba(255, 255, 255, 0.02);
     border: 1px solid var(--border-light);
@@ -730,7 +696,7 @@ body {
     color: var(--accent-danger);
 }
 
-/* Right Side Icons */
+
 .topbar-icon-btn {
     background: rgba(255, 255, 255, 0.02);
     border: 1px solid var(--border-light);
@@ -771,7 +737,7 @@ body {
     border: 2px solid var(--bg-secondary);
 }
 
-/* Notification Dropdown */
+
 .notification-dropdown {
     background: rgba(26, 29, 43, 0.95);
     backdrop-filter: blur(10px);
@@ -842,7 +808,7 @@ body {
     font-weight: 500;
 }
 
-/* User Profile button */
+
 .profile-btn {
     background: rgba(255, 255, 255, 0.02);
     border: 1px solid var(--border-light);
@@ -898,7 +864,7 @@ body {
     flex-shrink: 0;
 }
 
-/* Sidebar Header & Branding styles */
+
 .sidebar-header {
     height: 70px;
     padding: 0 var(--spacing-lg);
@@ -953,7 +919,8 @@ body {
     color: var(--accent-danger);
 }
 
-/* Sidebar user section consistent styling */
+
+
 .sidebar-user {
     padding: 0.65rem var(--spacing-lg);
     border-bottom: 1px solid var(--border-light);
@@ -1006,7 +973,7 @@ body {
     text-overflow: ellipsis;
 }
 
-/* Profile Dropdown Menu */
+
 .profile-dropdown-menu {
     background: rgba(26, 29, 43, 0.85);
     backdrop-filter: blur(20px);
@@ -1064,9 +1031,8 @@ body {
     color: var(--accent-blue);
 }
 
-/* ==================================================
-   UNIFIED FOOTER STYLES
-   ================================================== */
+
+
 .sentinel-footer {
     background: var(--bg-secondary);
     border-top: 1px solid var(--border-light);
@@ -1080,9 +1046,7 @@ body {
     gap: var(--spacing-sm);
 }
 
-/* ==================================================
-   UNIFIED ANIMATIONS
-   ================================================== */
+
 @keyframes fadeIn {
     from {
         opacity: 0;
@@ -1109,9 +1073,7 @@ body {
     animation: fadeIn 0.3s ease;
 }
 
-/* ==================================================
-   DASHBOARD AND REPORT WORKSPACE
-   ================================================== */
+
 .dashboard-container,
 .reports-container {
     display: flex;
@@ -1583,9 +1545,6 @@ body {
     margin-bottom: 0.35rem;
 }
 
-/* ==================================================
-   RESPONSIVE DESIGN
-   ================================================== */
 @media (min-width: 769px) and (max-width: 992px) {
     .search-container {
         max-width: 250px;
@@ -1669,7 +1628,7 @@ body {
         gap: 0.4rem;
     }
     
-    /* Mobile Search Collapse System */
+ 
     .search-container {
         max-width: 38px;
         height: 38px;
