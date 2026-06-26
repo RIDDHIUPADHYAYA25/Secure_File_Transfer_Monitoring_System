@@ -322,5 +322,17 @@ Reports can be exported via the **Reports** page or the `/api/reports/download` 
 > 🚫 Unauthorised access to or decryption of the database is strictly prohibited.
 > This is a cybersecurity project — data protection is not optional.
 
-And important points covered here are as follows:
+And important points are as follows:
 1. The OTP's coming during authentication will be visible on the terminal of the project folder after execution so for verification and proper authentication you need to see the terminal.
+
+   
+2.Database is encrypted so the access to see the database is denied  for user safety.
+
+
+
+
+
+<img width="1920" height="962" alt="Screenshot (353)" src="https://github.com/user-attachments/assets/f04381ad-98fe-4683-a23a-3da255c7f824" />
+
+
+
